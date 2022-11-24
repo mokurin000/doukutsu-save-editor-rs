@@ -1,3 +1,4 @@
+use std::mem::zeroed;
 use std::{fs, path::PathBuf};
 
 use cavestory_save::{GameProfile, Profile};
@@ -7,56 +8,60 @@ use strum::IntoEnumIterator;
 
 use rfd::FileDialog;
 
-/// We derive Deserialize/Serialize so we can persist app state on shutdown.
-#[derive(serde::Deserialize, serde::Serialize)]
-#[serde(default)] // if we add new fields, give them default values when deserializing old state
 pub struct App {
-    #[serde(skip)]
-    profile_path: Option<PathBuf>,
-
-    #[serde(skip)]
-    valid_profile: bool,
-
-    #[serde(skip)]
+    path: Option<PathBuf>,
+    valid: bool,
     profile: Option<GameProfile>,
-
-    #[serde(skip)]
     raw_profile: Option<Profile>,
+    weapon_num: usize,
 }
 
 impl Default for App {
     fn default() -> Self {
         Self {
             // Example stuff:
-            profile_path: None,
-            valid_profile: true,
+            path: None,
+            valid: true,
             profile: None,
             raw_profile: None,
+            weapon_num: 0,
         }
     }
 }
 
 impl App {
     /// Called once before the first frame.
-    pub fn new(cc: &eframe::CreationContext<'_>) -> Self {
+    pub fn new(_cc: &eframe::CreationContext<'_>) -> Self {
         // This is also where you can customized the look at feel of egui using
         // `cc.egui_ctx.set_visuals` and `cc.egui_ctx.set_fonts`.
 
-        // Load previous app state (if any).
-        // Note that you must enable the `persistence` feature for this to work.
-        if let Some(storage) = cc.storage {
-            return eframe::get_value(storage, eframe::APP_KEY).unwrap_or_default();
-        }
-
         Default::default()
+    }
+
+    fn count_weapon(&self) -> Option<usize> {
+        self.profile.and_then(|p| {
+            Some(
+                p.weapon.len()
+                    - p.weapon
+                        .iter()
+                        .rev()
+                        .take_while(|w| w.classification == WeaponType::None)
+                        .count(),
+            )
+        })
+    }
+
+    fn dump_profile(&mut self) {
+        if let Some(raw_profile) = &self.raw_profile {
+            self.profile = Some(GameProfile::dump(&raw_profile));
+            self.weapon_num = self.count_weapon().unwrap();
+        }
     }
 }
 
 impl eframe::App for App {
     /// Called by the frame work to save state before shutdown.
-    fn save(&mut self, storage: &mut dyn eframe::Storage) {
-        eframe::set_value(storage, eframe::APP_KEY, self);
-    }
+    fn save(&mut self, _storage: &mut dyn eframe::Storage) {}
 
     /// Called each time the UI needs repainting, which may be many times per second.
     /// Put your widgets into a `SidePanel`, `TopPanel`, `CentralPanel`, `Window` or `Area`.
@@ -68,7 +73,6 @@ impl eframe::App for App {
 
         #[cfg(not(target_arch = "wasm32"))]
         egui::TopBottomPanel::top("top_panel").show(ctx, |ui| {
-            // The top panel is often a good place for a menu bar:
             egui::menu::bar(ui, |ui| {
                 ui.menu_button("File", |ui| {
                     if ui.button("Open").clicked() {
@@ -79,12 +83,11 @@ impl eframe::App for App {
                         if let Some(path) = path {
                             let data: Profile = fs::read(&path).unwrap().into();
                             if data.verify() {
+                                self.path = Some(path);
+                                self.valid = true;
+
                                 self.raw_profile = Some(data);
-                                self.valid_profile = true;
-                                self.profile_path = Some(path);
-                            } else {
-                                self.valid_profile = false;
-                                self.raw_profile = None;
+                                self.dump_profile();
                             }
                         }
                     }
@@ -99,41 +102,62 @@ impl eframe::App for App {
             #[cfg(target_arch = "wasm32")]
             if false {} // todo: pick/save file on web
 
-            if !self.valid_profile {
+            ui.set_max_width(50.);
+
+            if !self.valid {
                 ui.label("Invalid Profile!");
             } else {
-                if let Some(raw_profile) = &self.raw_profile {
-                    let profile = self.profile.get_or_insert(GameProfile::dump(raw_profile));
+                if let Some(_) = &self.raw_profile {
+                    if self.profile.is_none() {
+                        self.dump_profile();
+                    }
 
+                    let profile = &mut self.profile.unwrap();
                     ui.label("Heal");
                     ui.add(egui::Slider::new(&mut profile.health, -1..=50));
 
                     ui.label("Weapons");
-                    for (i, weapon) in profile
-                        .weapon
-                        .iter_mut()
-                        .enumerate()
-                        .take_while(|(_, w)| w.classification != WeaponType::None)
-                    {
-                        egui::ComboBox::new(format!("weapontype-box-{i}"), format!("slot {i}"))
-                            .selected_text(weapon.classification.to_string())
-                            .show_ui(ui, |ui| {
-                                for model in WeaponType::iter() {
-                                    ui.selectable_value(
-                                        &mut weapon.classification,
-                                        model,
-                                        model.to_string(),
-                                    );
+                    ui.horizontal(|ui| {
+                        for (i, weapon) in profile.weapon[..self.weapon_num].iter_mut().enumerate()
+                        {
+                            ui.vertical(|ui| {
+                                egui::ComboBox::new(
+                                    format!("weapontype-box-{i}"),
+                                    format!("slot {i}"),
+                                )
+                                .selected_text(weapon.classification.to_string())
+                                .show_ui(ui, |ui| {
+                                    for model in WeaponType::iter() {
+                                        ui.selectable_value(
+                                            &mut weapon.classification,
+                                            model,
+                                            model.to_string(),
+                                        );
+                                    }
+                                });
+                                if weapon.classification != WeaponType::None {
+                                    // attributes here
+                                    ui.label("test");
                                 }
                             });
-                    }
+                        }
+
+                        // do not set the 8th weapon, you may go into issue.
+                        if self.weapon_num < 7 && ui.button("add").clicked() {
+                            self.weapon_num += 1
+                        }
+                        if self.weapon_num > 0 && ui.button("del").clicked() {
+                            self.weapon_num -= 1;
+                            profile.weapon[self.weapon_num] = Weapon::default();
+                        }
+                    });
                 }
             }
 
             ui.horizontal(|ui| {
                 if self.raw_profile.is_some() {
                     if ui.button("Undo all").clicked() {
-                        self.profile = None;
+                        self.dump_profile();
                     }
                 }
             });
