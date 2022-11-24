@@ -109,11 +109,12 @@ impl eframe::App for App {
                     ui.add(egui::Slider::new(&mut profile.health, -1..=50));
 
                     ui.label("Weapons");
-                    for (i, weapon) in profile.weapon.iter_mut().enumerate() {
-                        if weapon.classification == WeaponType::None {
-                            break;
-                        }
-
+                    for (i, weapon) in profile
+                        .weapon
+                        .iter_mut()
+                        .enumerate()
+                        .take_while(|(_, w)| w.classification != WeaponType::None)
+                    {
                         egui::ComboBox::new(format!("weapontype-box-{i}"), format!("slot {i}"))
                             .selected_text(weapon.classification.to_string())
                             .show_ui(ui, |ui| {
