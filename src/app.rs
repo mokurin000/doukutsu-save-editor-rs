@@ -1,3 +1,4 @@
+#[cfg(not(target_arch = "wasm32"))]
 use std::{fs, path::PathBuf};
 
 use cavestory_save::{GameProfile, Profile};
@@ -5,7 +6,9 @@ use cavestory_save::{GameProfile, Profile};
 use cavestory_save::items::*;
 use strum::IntoEnumIterator;
 
-pub struct App {
+use egui::{DragValue, Slider};
+
+pub struct MainApp {
     #[cfg(not(target_arch = "wasm32"))]
     path: Option<PathBuf>,
     profile: Option<GameProfile>,
@@ -13,7 +16,8 @@ pub struct App {
     weapon_num: usize,
 }
 
-impl Default for App {
+impl Default for MainApp {
+    #[cfg(not(target_arch = "wasm32"))]
     fn default() -> Self {
         Self {
             path: None,
@@ -22,11 +26,36 @@ impl Default for App {
             weapon_num: 0,
         }
     }
+    #[cfg(target_arch = "wasm32")]
+    fn default() -> Self {
+        Self {
+            profile: None,
+            raw_profile: None,
+            weapon_num: 0,
+        }
+    }
 }
 
-impl App {
+impl MainApp {
     pub fn new(_cc: &eframe::CreationContext<'_>) -> Self {
         Default::default()
+    }
+
+    fn verify_and_init(&mut self, data: Profile) -> bool {
+        if data.verify() {
+            self.profile = Some(GameProfile::dump(&data));
+            self.raw_profile = Some(data);
+            self.weapon_num = self.count_weapon().unwrap();
+            true
+        } else {
+            use rfd::{MessageDialog, MessageLevel};
+            MessageDialog::new()
+                .set_level(MessageLevel::Error)
+                .set_title("Load Error")
+                .set_description("Profile.dat head not equal to \"Do041220\"")
+                .show();
+            false
+        }
     }
 
     fn count_weapon(&self) -> Option<usize> {
@@ -41,7 +70,7 @@ impl App {
     }
 }
 
-impl eframe::App for App {
+impl eframe::App for MainApp {
     /// Called by the frame work to save state before shutdown.
     fn save(&mut self, _storage: &mut dyn eframe::Storage) {}
 
@@ -56,28 +85,17 @@ impl eframe::App for App {
         #[cfg(not(target_arch = "wasm32"))]
         egui::TopBottomPanel::top("top_panel").show(ctx, |ui| {
             use rfd::FileDialog;
-            use rfd::{MessageDialog, MessageLevel};
             egui::menu::bar(ui, |ui| {
                 ui.menu_button("File", |ui| {
                     if ui.button("Open").clicked() {
                         let path = FileDialog::default()
                             .add_filter("Profile", &["dat"])
                             .set_title("Pick your game profile")
-                            .pick_file(); // this file is guranteed availiable to read
+                            .pick_file();
                         if let Some(path) = path {
                             let data: Profile = fs::read(&path).unwrap().into();
-                            if data.verify() {
+                            if self.verify_and_init(data) {
                                 self.path = Some(path);
-
-                                self.profile = Some(GameProfile::dump(&data));
-                                self.raw_profile = Some(data);
-                                self.weapon_num = self.count_weapon().unwrap();
-                            } else {
-                                MessageDialog::new()
-                                    .set_level(MessageLevel::Error)
-                                    .set_title("Load Error")
-                                    .set_description("Profile.dat head not equal to \"Do041220\"")
-                                    .show();
                             }
                         }
                     }
@@ -89,44 +107,96 @@ impl eframe::App for App {
         });
 
         egui::CentralPanel::default().show(ctx, |ui| {
-            #[cfg(target_arch = "wasm32")]
-            if false {} // todo: pick/save file on web
-
             if let Some(profile) = &mut self.profile {
-                ui.label("Heal");
-                ui.add(egui::Slider::new(&mut profile.health, -1..=50));
+                egui::Window::new("Basic").show(ctx, |ui| {
+                    ui.add(DragValue::new(&mut profile.health).prefix("heal: "));
+                    ui.add(DragValue::new(&mut profile.max_health).prefix("max heal: "));
 
-                ui.label("Weapons");
-                ui.horizontal(|ui| {
-                    for (i, weapon) in profile.weapon[..self.weapon_num].iter_mut().enumerate() {
-                        ui.vertical(|ui| {
-                            egui::ComboBox::new(format!("weapontype-box-{i}"), format!("slot {i}"))
-                                .selected_text(weapon.classification.to_string())
-                                .show_ui(ui, |ui| {
-                                    for model in WeaponType::iter() {
-                                        ui.selectable_value(
-                                            &mut weapon.classification,
-                                            model,
-                                            model.to_string(),
+                    ui.label("BGM");
+                    egui::ComboBox::new("background_music", "")
+                        .selected_text(profile.music.to_string())
+                        .width(200.)
+                        .show_ui(ui, |ui| {
+                            for bg_music in Song::iter() {
+                                ui.selectable_value(
+                                    &mut profile.music,
+                                    bg_music,
+                                    bg_music.to_string(),
+                                );
+                            }
+                        });
+
+                    ui.label("Map");
+                    egui::ComboBox::new("map", "")
+                        .selected_text(profile.map.to_string())
+                        .width(200.)
+                        .show_ui(ui, |ui| {
+                            for map in Map::iter() {
+                                ui.selectable_value(&mut profile.map, map, map.to_string());
+                            }
+                        });
+
+                    ui.label("Position");
+                    ui.horizontal(|ui| {
+                        ui.add(DragValue::new(&mut profile.position.x).prefix("x: "));
+                        ui.add(DragValue::new(&mut profile.position.y).prefix("y: "));
+                    });
+                });
+                egui::Window::new("Weapons").show(ctx, |ui| {
+                    ui.horizontal(|ui| {
+                        // do not set the 8th weapon, you may go into issue.
+                        if ui.button(" + ").clicked() && self.weapon_num < 7 {
+                            self.weapon_num += 1
+                        }
+                        if ui.button(" - ").clicked() && self.weapon_num > 0 {
+                            self.weapon_num -= 1;
+                            profile.weapon[self.weapon_num] = Weapon::default();
+                        }
+                    });
+
+                    ui.separator();
+
+                    for (chunk_i, chunk) in
+                        profile.weapon[..self.weapon_num].chunks_mut(3).enumerate()
+                    {
+                        ui.horizontal(|ui| {
+                            for (i, weapon) in chunk.iter_mut().enumerate() {
+                                ui.vertical(|ui| {
+                                    egui::ComboBox::new(
+                                        format!("weapontype-box-{}", chunk_i * 3 + i),
+                                        "",
+                                    )
+                                    .width(150.)
+                                    .selected_text(weapon.classification.to_string())
+                                    .show_ui(ui, |ui| {
+                                        for model in WeaponType::iter() {
+                                            ui.selectable_value(
+                                                &mut weapon.classification,
+                                                model,
+                                                model.to_string(),
+                                            );
+                                        }
+                                    });
+                                    if weapon.classification != WeaponType::None {
+                                        // attributes here
+
+                                        ui.label("level");
+                                        ui.add(Slider::new(&mut weapon.level, 0..=3));
+
+                                        ui.add(DragValue::new(&mut weapon.ammo).prefix("ammo: "));
+                                        ui.add(
+                                            DragValue::new(&mut weapon.max_ammo)
+                                                .prefix("max ammo: "),
                                         );
+                                        ui.add(DragValue::new(&mut weapon.exp).prefix("exp: "));
                                     }
                                 });
-                            if weapon.classification != WeaponType::None {
-                                // attributes here
-                                ui.label("test");
                             }
                         });
                     }
-
-                    // do not set the 8th weapon, you may go into issue.
-                    if self.weapon_num < 7 && ui.button("add").clicked() {
-                        self.weapon_num += 1
-                    }
-                    if self.weapon_num > 0 && ui.button("del").clicked() {
-                        self.weapon_num -= 1;
-                        profile.weapon[self.weapon_num] = Weapon::default();
-                    }
                 });
+            } else {
+                ui.label("Please load profile.dat");
             }
 
             ui.horizontal(|ui| {
@@ -134,6 +204,23 @@ impl eframe::App for App {
                     if ui.button("Undo all").clicked() {
                         self.profile = Some(GameProfile::dump(raw));
                         self.weapon_num = self.count_weapon().unwrap();
+                    }
+
+                    #[cfg(not(target_arch = "wasm32"))]
+                    if ui.button("Save").clicked() {
+                        let mut raw = raw.clone();
+                        if let Some(path) = &self.path {
+                            self.profile.unwrap().write(&mut raw);
+                            let bytes: Vec<u8> = raw.into();
+                            if let Err(e) = fs::write(path, bytes) {
+                                use rfd::{MessageDialog, MessageLevel};
+                                MessageDialog::new()
+                                    .set_level(MessageLevel::Error)
+                                    .set_description(&e.to_string())
+                                    .set_title("Error occured while saving!")
+                                    .show();
+                            }
+                        }
                     }
                 }
             });

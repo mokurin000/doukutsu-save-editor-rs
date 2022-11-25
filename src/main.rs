@@ -3,8 +3,8 @@
 
 // When compiling natively:
 #[cfg(not(target_arch = "wasm32"))]
-use eframe::NativeOptions;
 fn main() {
+    use eframe::NativeOptions;
     // Log to stdout (if you run with `RUST_LOG=debug`).
     tracing_subscriber::fmt::init();
 
@@ -12,7 +12,7 @@ fn main() {
     eframe::run_native(
         "CaveStory Save Editor",
         native_options,
-        Box::new(|cc| Box::new(doukutsu_save_editor::App::new(cc))),
+        Box::new(|cc| Box::new(doukutsu_save_editor::MainApp::new(cc))),
     );
 }
 
@@ -29,7 +29,7 @@ fn main() {
     eframe::start_web(
         "the_canvas_id", // hardcode it
         web_options,
-        Box::new(|cc| Box::new(eframe_template::App::new(cc))),
+        Box::new(|cc| Box::new(doukutsu_save_editor::MainApp::new(cc))),
     )
     .expect("failed to start eframe");
 }
