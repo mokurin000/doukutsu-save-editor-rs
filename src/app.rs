@@ -1,12 +1,9 @@
-use std::mem::zeroed;
 use std::{fs, path::PathBuf};
 
 use cavestory_save::{GameProfile, Profile};
 
 use cavestory_save::items::*;
 use strum::IntoEnumIterator;
-
-use rfd::{FileDialog, MessageDialog, MessageLevel};
 
 pub struct App {
     path: Option<PathBuf>,
@@ -18,7 +15,6 @@ pub struct App {
 impl Default for App {
     fn default() -> Self {
         Self {
-            // Example stuff:
             path: None,
             profile: None,
             raw_profile: None,
@@ -39,12 +35,10 @@ impl App {
     fn count_weapon(&self) -> Option<usize> {
         self.profile.and_then(|p| {
             Some(
-                p.weapon.len()
-                    - p.weapon
-                        .iter()
-                        .rev()
-                        .take_while(|w| w.classification == WeaponType::None)
-                        .count(),
+                p.weapon
+                    .iter()
+                    .take_while(|w| w.classification != WeaponType::None)
+                    .count(),
             )
         })
     }
@@ -64,6 +58,8 @@ impl eframe::App for App {
 
         #[cfg(not(target_arch = "wasm32"))]
         egui::TopBottomPanel::top("top_panel").show(ctx, |ui| {
+            use rfd::FileDialog;
+            use rfd::{MessageDialog, MessageLevel};
             egui::menu::bar(ui, |ui| {
                 ui.menu_button("File", |ui| {
                     if ui.button("Open").clicked() {
@@ -160,10 +156,6 @@ impl eframe::App for App {
                 });
             });
         });
-    }
-
-    fn on_close_event(&mut self) -> bool {
-        true
     }
 
     fn on_exit(&mut self, _gl: Option<&eframe::glow::Context>) {}
