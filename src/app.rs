@@ -3,18 +3,13 @@ use std::{fs, path::PathBuf};
 use cavestory_save::{GameProfile, Profile};
 
 use cavestory_save::items::*;
-use serde::{Deserialize, Serialize};
 use strum::IntoEnumIterator;
 
-#[derive(Serialize, Deserialize)]
 pub struct App {
-    #[serde(skip)]
+    #[cfg(not(target_arch = "wasm32"))]
     path: Option<PathBuf>,
-    #[serde(skip)]
     profile: Option<GameProfile>,
-    #[serde(skip)]
     raw_profile: Option<Profile>,
-    #[serde(skip)]
     weapon_num: usize,
 }
 
@@ -48,9 +43,7 @@ impl App {
 
 impl eframe::App for App {
     /// Called by the frame work to save state before shutdown.
-    fn save(&mut self, storage: &mut dyn eframe::Storage) {
-        eframe::set_value(storage, eframe::APP_KEY, self);
-    }
+    fn save(&mut self, _storage: &mut dyn eframe::Storage) {}
 
     /// Called each time the UI needs repainting, which may be many times per second.
     /// Put your widgets into a `SidePanel`, `TopPanel`, `CentralPanel`, `Window` or `Area`.
@@ -99,8 +92,7 @@ impl eframe::App for App {
             #[cfg(target_arch = "wasm32")]
             if false {} // todo: pick/save file on web
 
-            if let Some(_) = &self.raw_profile {
-                let profile = &mut self.profile.unwrap();
+            if let Some(profile) = &mut self.profile {
                 ui.label("Heal");
                 ui.add(egui::Slider::new(&mut profile.health, -1..=50));
 
@@ -138,14 +130,12 @@ impl eframe::App for App {
             }
 
             ui.horizontal(|ui| {
-                /*
                 if let Some(raw) = &self.raw_profile {
                     if ui.button("Undo all").clicked() {
                         self.profile = Some(GameProfile::dump(raw));
                         self.weapon_num = self.count_weapon().unwrap();
                     }
                 }
-                */
             });
 
             ui.with_layout(egui::Layout::bottom_up(egui::Align::LEFT), |ui| {
