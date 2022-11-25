@@ -3,12 +3,18 @@ use std::{fs, path::PathBuf};
 use cavestory_save::{GameProfile, Profile};
 
 use cavestory_save::items::*;
+use serde::{Deserialize, Serialize};
 use strum::IntoEnumIterator;
 
+#[derive(Serialize, Deserialize)]
 pub struct App {
+    #[serde(skip)]
     path: Option<PathBuf>,
+    #[serde(skip)]
     profile: Option<GameProfile>,
+    #[serde(skip)]
     raw_profile: Option<Profile>,
+    #[serde(skip)]
     weapon_num: usize,
 }
 
@@ -24,11 +30,7 @@ impl Default for App {
 }
 
 impl App {
-    /// Called once before the first frame.
     pub fn new(_cc: &eframe::CreationContext<'_>) -> Self {
-        // This is also where you can customized the look at feel of egui using
-        // `cc.egui_ctx.set_visuals` and `cc.egui_ctx.set_fonts`.
-
         Default::default()
     }
 
@@ -46,7 +48,9 @@ impl App {
 
 impl eframe::App for App {
     /// Called by the frame work to save state before shutdown.
-    fn save(&mut self, _storage: &mut dyn eframe::Storage) {}
+    fn save(&mut self, storage: &mut dyn eframe::Storage) {
+        eframe::set_value(storage, eframe::APP_KEY, self);
+    }
 
     /// Called each time the UI needs repainting, which may be many times per second.
     /// Put your widgets into a `SidePanel`, `TopPanel`, `CentralPanel`, `Window` or `Area`.
@@ -134,12 +138,14 @@ impl eframe::App for App {
             }
 
             ui.horizontal(|ui| {
+                /*
                 if let Some(raw) = &self.raw_profile {
                     if ui.button("Undo all").clicked() {
                         self.profile = Some(GameProfile::dump(raw));
                         self.weapon_num = self.count_weapon().unwrap();
                     }
                 }
+                */
             });
 
             ui.with_layout(egui::Layout::bottom_up(egui::Align::LEFT), |ui| {
