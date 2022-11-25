@@ -6,11 +6,10 @@ use cavestory_save::{GameProfile, Profile};
 use cavestory_save::items::*;
 use strum::IntoEnumIterator;
 
-use rfd::FileDialog;
+use rfd::{FileDialog, MessageDialog, MessageLevel};
 
 pub struct App {
     path: Option<PathBuf>,
-    valid: bool,
     profile: Option<GameProfile>,
     raw_profile: Option<Profile>,
     weapon_num: usize,
@@ -21,7 +20,6 @@ impl Default for App {
         Self {
             // Example stuff:
             path: None,
-            valid: true,
             profile: None,
             raw_profile: None,
             weapon_num: 0,
@@ -50,13 +48,6 @@ impl App {
             )
         })
     }
-
-    fn dump_profile(&mut self) {
-        if let Some(raw_profile) = &self.raw_profile {
-            self.profile = Some(GameProfile::dump(&raw_profile));
-            self.weapon_num = self.count_weapon().unwrap();
-        }
-    }
 }
 
 impl eframe::App for App {
@@ -84,10 +75,16 @@ impl eframe::App for App {
                             let data: Profile = fs::read(&path).unwrap().into();
                             if data.verify() {
                                 self.path = Some(path);
-                                self.valid = true;
 
+                                self.profile = Some(GameProfile::dump(&data));
                                 self.raw_profile = Some(data);
-                                self.dump_profile();
+                                self.weapon_num = self.count_weapon().unwrap();
+                            } else {
+                                MessageDialog::new()
+                                    .set_level(MessageLevel::Error)
+                                    .set_title("Load Error")
+                                    .set_description("Profile.dat head not equal to \"Do041220\"")
+                                    .show();
                             }
                         }
                     }
@@ -102,29 +99,16 @@ impl eframe::App for App {
             #[cfg(target_arch = "wasm32")]
             if false {} // todo: pick/save file on web
 
-            ui.set_max_width(50.);
+            if let Some(_) = &self.raw_profile {
+                let profile = &mut self.profile.unwrap();
+                ui.label("Heal");
+                ui.add(egui::Slider::new(&mut profile.health, -1..=50));
 
-            if !self.valid {
-                ui.label("Invalid Profile!");
-            } else {
-                if let Some(_) = &self.raw_profile {
-                    if self.profile.is_none() {
-                        self.dump_profile();
-                    }
-
-                    let profile = &mut self.profile.unwrap();
-                    ui.label("Heal");
-                    ui.add(egui::Slider::new(&mut profile.health, -1..=50));
-
-                    ui.label("Weapons");
-                    ui.horizontal(|ui| {
-                        for (i, weapon) in profile.weapon[..self.weapon_num].iter_mut().enumerate()
-                        {
-                            ui.vertical(|ui| {
-                                egui::ComboBox::new(
-                                    format!("weapontype-box-{i}"),
-                                    format!("slot {i}"),
-                                )
+                ui.label("Weapons");
+                ui.horizontal(|ui| {
+                    for (i, weapon) in profile.weapon[..self.weapon_num].iter_mut().enumerate() {
+                        ui.vertical(|ui| {
+                            egui::ComboBox::new(format!("weapontype-box-{i}"), format!("slot {i}"))
                                 .selected_text(weapon.classification.to_string())
                                 .show_ui(ui, |ui| {
                                     for model in WeaponType::iter() {
@@ -135,29 +119,29 @@ impl eframe::App for App {
                                         );
                                     }
                                 });
-                                if weapon.classification != WeaponType::None {
-                                    // attributes here
-                                    ui.label("test");
-                                }
-                            });
-                        }
+                            if weapon.classification != WeaponType::None {
+                                // attributes here
+                                ui.label("test");
+                            }
+                        });
+                    }
 
-                        // do not set the 8th weapon, you may go into issue.
-                        if self.weapon_num < 7 && ui.button("add").clicked() {
-                            self.weapon_num += 1
-                        }
-                        if self.weapon_num > 0 && ui.button("del").clicked() {
-                            self.weapon_num -= 1;
-                            profile.weapon[self.weapon_num] = Weapon::default();
-                        }
-                    });
-                }
+                    // do not set the 8th weapon, you may go into issue.
+                    if self.weapon_num < 7 && ui.button("add").clicked() {
+                        self.weapon_num += 1
+                    }
+                    if self.weapon_num > 0 && ui.button("del").clicked() {
+                        self.weapon_num -= 1;
+                        profile.weapon[self.weapon_num] = Weapon::default();
+                    }
+                });
             }
 
             ui.horizontal(|ui| {
-                if self.raw_profile.is_some() {
+                if let Some(raw) = &self.raw_profile {
                     if ui.button("Undo all").clicked() {
-                        self.dump_profile();
+                        self.profile = Some(GameProfile::dump(raw));
+                        self.weapon_num = self.count_weapon().unwrap();
                     }
                 }
             });
