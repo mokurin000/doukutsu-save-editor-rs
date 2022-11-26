@@ -9,6 +9,8 @@ use strum::IntoEnumIterator;
 use egui::{DragValue, Slider};
 
 pub struct MainApp {
+    #[cfg(target_arch = "wasm32")]
+    input: String,
     #[cfg(not(target_arch = "wasm32"))]
     path: Option<PathBuf>,
     profile: Option<GameProfile>,
@@ -29,6 +31,7 @@ impl Default for MainApp {
     #[cfg(target_arch = "wasm32")]
     fn default() -> Self {
         Self {
+            input: String::new(),
             profile: None,
             raw_profile: None,
             weapon_num: 0,
@@ -107,6 +110,30 @@ impl eframe::App for MainApp {
         });
 
         egui::CentralPanel::default().show(ctx, |ui| {
+            #[cfg(target_arch = "wasm32")]
+            {
+                use rfd::{MessageDialog, MessageLevel};
+
+                ui.label("Paste profile.dat encoded in base64 here:");
+
+                ui.horizontal(|ui| {
+                    ui.text_edit_singleline(&mut self.input);
+                    if ui.button("Load Profile").clicked() {
+                        self.input.retain(|c| !c.is_ascii_whitespace());
+                        if let Ok(bytes) = base64::decode(&self.input) {
+                            if self.verify_and_init(bytes.into()) {
+                                self.input.clear();
+                            }
+                        } else {
+                            MessageDialog::new()
+                                .set_description("Invalid base64 code!")
+                                .set_level(MessageLevel::Error)
+                                .show();
+                        }
+                    }
+                });
+            }
+
             if let Some(profile) = &mut self.profile {
                 egui::Window::new("Basic").show(ctx, |ui| {
                     ui.add(DragValue::new(&mut profile.health).prefix("heal: "));
@@ -142,6 +169,7 @@ impl eframe::App for MainApp {
                         ui.add(DragValue::new(&mut profile.position.y).prefix("y: "));
                     });
                 });
+
                 egui::Window::new("Weapons").show(ctx, |ui| {
                     ui.horizontal(|ui| {
                         // do not set the 8th weapon, you may go into issue.
@@ -178,8 +206,6 @@ impl eframe::App for MainApp {
                                         }
                                     });
                                     if weapon.classification != WeaponType::None {
-                                        // attributes here
-
                                         ui.label("level");
                                         ui.add(Slider::new(&mut weapon.level, 0..=3));
 
@@ -196,6 +222,7 @@ impl eframe::App for MainApp {
                     }
                 });
             } else {
+                #[cfg(not(target_arch = "wasm32"))]
                 ui.label("Please load profile.dat");
             }
 
@@ -206,9 +233,9 @@ impl eframe::App for MainApp {
                         self.weapon_num = self.count_weapon().unwrap();
                     }
 
-                    #[cfg(not(target_arch = "wasm32"))]
                     if ui.button("Save").clicked() {
                         let mut raw = raw.clone();
+                        #[cfg(not(target_arch = "wasm32"))]
                         if let Some(path) = &self.path {
                             self.profile.unwrap().write(&mut raw);
                             let bytes: Vec<u8> = raw.into();
@@ -220,6 +247,15 @@ impl eframe::App for MainApp {
                                     .set_title("Error occured while saving!")
                                     .show();
                             }
+                        }
+
+                        #[cfg(target_arch = "wasm32")]
+                        {
+                            self.profile.unwrap().write(&mut raw);
+                            let _bytes: Vec<u8> = raw.into();
+
+                            // todo: export file with Blob API
+                            todo!();
                         }
                     }
                 }
