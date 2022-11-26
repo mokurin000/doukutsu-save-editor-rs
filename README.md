@@ -1,12 +1,20 @@
 # CaveStory Save Editor
 
-[![dependency status](https://deps.rs/repo/github/emilk/eframe_template/status.svg)](https://deps.rs/repo/github/emilk/eframe_template)
+[![dependency status](https://deps.rs/repo/github/poly000/doukutsu-save-editor-rs/status.svg)](https://deps.rs/repo/github/poly000/doukutsu-save-editor-rs)
 
 Another save editor for `doukutsu-rs` in rust.
 
 ## TODO
 
 - [ ] web support (profile export)
+
+## Build Dependencies
+
+We use [GTK3 backend](https://docs.rs/rfd/latest/rfd/#linux--bsd-backends) on GNU/Linux and *BSD for `rfd`.
+
+To build for wasm, you can follow the instructions from [Web Locally](https://github.com/poly000/doukutsu-save-editor-rs#web-locally).
+
+Note this will generate static web frontend app, it does not need any native backend.
 
 ### Web Locally
 
