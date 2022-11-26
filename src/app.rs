@@ -8,6 +8,7 @@ use strum::IntoEnumIterator;
 
 use egui::{DragValue, Slider};
 
+#[derive(Default)]
 pub struct MainApp {
     #[cfg(target_arch = "wasm32")]
     input: String,
@@ -16,27 +17,6 @@ pub struct MainApp {
     profile: Option<GameProfile>,
     raw_profile: Option<Profile>,
     weapon_num: usize,
-}
-
-impl Default for MainApp {
-    #[cfg(not(target_arch = "wasm32"))]
-    fn default() -> Self {
-        Self {
-            path: None,
-            profile: None,
-            raw_profile: None,
-            weapon_num: 0,
-        }
-    }
-    #[cfg(target_arch = "wasm32")]
-    fn default() -> Self {
-        Self {
-            input: String::new(),
-            profile: None,
-            raw_profile: None,
-            weapon_num: 0,
-        }
-    }
 }
 
 impl MainApp {
@@ -62,13 +42,11 @@ impl MainApp {
     }
 
     fn count_weapon(&self) -> Option<usize> {
-        self.profile.and_then(|p| {
-            Some(
-                p.weapon
-                    .iter()
-                    .take_while(|w| w.classification != WeaponType::None)
-                    .count(),
-            )
+        self.profile.map(|p| {
+            p.weapon
+                .iter()
+                .take_while(|w| w.classification != WeaponType::None)
+                .count()
         })
     }
 }
