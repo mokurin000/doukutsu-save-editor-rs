@@ -166,6 +166,7 @@ impl eframe::App for MainApp {
                 egui::Window::new("Equipments").show(ctx, |ui| {
                     for (i, equip) in Equipment::iter().enumerate() {
                         ui.checkbox(&mut self.equip_checked[i], equip.to_string());
+                        profile.equipment.switch(equip, self.equip_checked[i]);
                     }
                 });
 
@@ -234,15 +235,6 @@ impl eframe::App for MainApp {
                     }
 
                     if ui.button("Save").clicked() {
-                        let profile = &mut self.profile.unwrap();
-                        for (i, equip) in Equipment::iter().enumerate() {
-                            if self.equip_checked[i] {
-                                profile.equipment.switch_on(equip);
-                            } else {
-                                profile.equipment.switch_off(equip);
-                            }
-                        }
-
                         let mut raw = raw.clone();
                         #[cfg(not(target_arch = "wasm32"))]
                         if let Some(path) = &self.path {
