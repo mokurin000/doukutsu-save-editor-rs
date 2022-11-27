@@ -264,7 +264,10 @@ impl eframe::App for MainApp {
                         let bytes: Vec<u8> = raw.into();
                         ui.hyperlink_to(
                             "Save",
-                            format!("data:application/octet-stream;name=profile.dat;base64,{}", encode(bytes)),
+                            format!(
+                                "data:application/octet-stream;name=profile.dat;base64,{}",
+                                encode(bytes)
+                            ),
                         );
                     }
                 }
