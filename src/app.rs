@@ -258,10 +258,9 @@ impl eframe::App for MainApp {
                         #[cfg(target_arch = "wasm32")]
                         {
                             self.profile.unwrap().write(&mut raw);
-                            let _bytes: Vec<u8> = raw.into();
+                            let bytes: Vec<u8> = raw.into();
 
-                            // todo: export file with Blob API
-                            todo!();
+                            self.input = base64::encode(bytes); // not good but usable
                         }
                     }
                 }
