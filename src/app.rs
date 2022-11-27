@@ -17,6 +17,7 @@ pub struct MainApp {
     profile: Option<GameProfile>,
     raw_profile: Option<Profile>,
     weapon_num: usize,
+    equip_checked: [bool; 9],
 }
 
 impl MainApp {
@@ -29,6 +30,7 @@ impl MainApp {
             self.profile = Some(GameProfile::dump(&data));
             self.raw_profile = Some(data);
             self.weapon_num = self.count_weapon().unwrap();
+            self.equip_checked = self.detect_equip().unwrap();
             true
         } else {
             use rfd::{MessageDialog, MessageLevel};
@@ -39,6 +41,19 @@ impl MainApp {
                 .show();
             false
         }
+    }
+
+    fn detect_equip(&self) -> Option<[bool; 9]> {
+        self.profile.map(|p| {
+            let mut equip_checked: [bool; 9] = Default::default();
+
+            let equip_current = p.equipment;
+            for (i, equip) in Equipment::iter().enumerate() {
+                equip_checked[i] = equip_current.check(equip);
+            }
+
+            equip_checked
+        })
     }
 
     fn count_weapon(&self) -> Option<usize> {
@@ -148,6 +163,12 @@ impl eframe::App for MainApp {
                     });
                 });
 
+                egui::Window::new("Equipments").show(ctx, |ui| {
+                    for (i, equip) in Equipment::iter().enumerate() {
+                        ui.checkbox(&mut self.equip_checked[i], equip.to_string());
+                    }
+                });
+
                 egui::Window::new("Weapons").show(ctx, |ui| {
                     ui.horizontal(|ui| {
                         // do not set the 8th weapon, you may go into issue.
@@ -209,9 +230,19 @@ impl eframe::App for MainApp {
                     if ui.button("Undo all").clicked() {
                         self.profile = Some(GameProfile::dump(raw));
                         self.weapon_num = self.count_weapon().unwrap();
+                        self.equip_checked = self.detect_equip().unwrap();
                     }
 
                     if ui.button("Save").clicked() {
+                        let profile = &mut self.profile.unwrap();
+                        for (i, equip) in Equipment::iter().enumerate() {
+                            if self.equip_checked[i] {
+                                profile.equipment.switch_on(equip);
+                            } else {
+                                profile.equipment.switch_off(equip);
+                            }
+                        }
+
                         let mut raw = raw.clone();
                         #[cfg(not(target_arch = "wasm32"))]
                         if let Some(path) = &self.path {
