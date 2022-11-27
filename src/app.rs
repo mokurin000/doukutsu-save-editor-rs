@@ -1,6 +1,7 @@
 #[cfg(not(target_arch = "wasm32"))]
 use std::{fs, path::PathBuf};
 
+use base64::encode;
 use cavestory_save::{GameProfile, Profile};
 
 use cavestory_save::items::*;
@@ -239,9 +240,9 @@ impl eframe::App for MainApp {
                         self.equip_checked = self.detect_equip().unwrap();
                     }
 
+                    #[cfg(not(target_arch = "wasm32"))]
                     if ui.button("Save").clicked() {
                         let mut raw = raw.clone();
-                        #[cfg(not(target_arch = "wasm32"))]
                         if let Some(path) = &self.path {
                             self.profile.unwrap().write(&mut raw);
                             let bytes: Vec<u8> = raw.into();
@@ -254,14 +255,17 @@ impl eframe::App for MainApp {
                                     .show();
                             }
                         }
+                    }
 
-                        #[cfg(target_arch = "wasm32")]
-                        {
-                            self.profile.unwrap().write(&mut raw);
-                            let bytes: Vec<u8> = raw.into();
-
-                            self.input = base64::encode(bytes); // not good but usable
-                        }
+                    #[cfg(target_arch = "wasm32")]
+                    {
+                        let mut raw = raw.clone();
+                        self.profile.unwrap().write(&mut raw);
+                        let bytes: Vec<u8> = raw.into();
+                        ui.hyperlink_to(
+                            "Save",
+                            format!("data:application/octet-stream;name=profile.dat;base64,{}", encode(bytes)),
+                        );
                     }
                 }
             });
