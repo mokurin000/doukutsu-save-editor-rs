@@ -1,7 +1,6 @@
 #[cfg(not(target_arch = "wasm32"))]
 use std::{fs, path::PathBuf};
 
-use base64::encode;
 use cavestory_save::{GameProfile, Profile};
 
 use cavestory_save::items::*;
@@ -266,7 +265,7 @@ impl eframe::App for MainApp {
                             "Save",
                             format!(
                                 "data:application/octet-stream;name=profile.dat;base64,{}",
-                                encode(bytes)
+                                base64::encode(bytes)
                             ),
                         );
                     }
