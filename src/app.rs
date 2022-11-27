@@ -44,10 +44,10 @@ impl MainApp {
     }
 
     fn detect_equip(&self) -> Option<[bool; 9]> {
-        self.profile.map(|p| {
+        self.profile.map(|GameProfile { equipment, .. }| {
             let mut equip_checked: [bool; 9] = Default::default();
 
-            let equip_current = p.equipment;
+            let equip_current = equipment;
             for (i, equip) in Equipment::iter().enumerate() {
                 equip_checked[i] = equip_current.check(equip);
             }
@@ -57,8 +57,8 @@ impl MainApp {
     }
 
     fn count_weapon(&self) -> Option<usize> {
-        self.profile.map(|p| {
-            p.weapon
+        self.profile.map(|GameProfile { weapon, .. }| {
+            weapon
                 .iter()
                 .take_while(|w| w.classification != WeaponType::None)
                 .count()
@@ -127,46 +127,53 @@ impl eframe::App for MainApp {
                 });
             }
 
-            if let Some(profile) = &mut self.profile {
+            if let Some(GameProfile {
+                position,
+                map,
+                music,
+                health,
+                max_health,
+                weapon,
+                inventory: _,
+                teleporter: _,
+                equipment,
+            }) = &mut self.profile
+            {
                 egui::Window::new("Basic").show(ctx, |ui| {
-                    ui.add(DragValue::new(&mut profile.health).prefix("heal: "));
-                    ui.add(DragValue::new(&mut profile.max_health).prefix("max heal: "));
+                    ui.add(DragValue::new(health).prefix("heal: "));
+                    ui.add(DragValue::new(max_health).prefix("max heal: "));
 
                     ui.label("BGM");
                     egui::ComboBox::new("background_music", "")
-                        .selected_text(profile.music.to_string())
+                        .selected_text(music.to_string())
                         .width(200.)
                         .show_ui(ui, |ui| {
                             for bg_music in Song::iter() {
-                                ui.selectable_value(
-                                    &mut profile.music,
-                                    bg_music,
-                                    bg_music.to_string(),
-                                );
+                                ui.selectable_value(music, bg_music, bg_music.to_string());
                             }
                         });
 
                     ui.label("Map");
                     egui::ComboBox::new("map", "")
-                        .selected_text(profile.map.to_string())
+                        .selected_text(map.to_string())
                         .width(200.)
                         .show_ui(ui, |ui| {
-                            for map in Map::iter() {
-                                ui.selectable_value(&mut profile.map, map, map.to_string());
+                            for map_option in Map::iter() {
+                                ui.selectable_value(map, map_option, map_option.to_string());
                             }
                         });
 
                     ui.label("Position");
                     ui.horizontal(|ui| {
-                        ui.add(DragValue::new(&mut profile.position.x).prefix("x: "));
-                        ui.add(DragValue::new(&mut profile.position.y).prefix("y: "));
+                        ui.add(DragValue::new(&mut position.x).prefix("x: "));
+                        ui.add(DragValue::new(&mut position.y).prefix("y: "));
                     });
                 });
 
                 egui::Window::new("Equipments").show(ctx, |ui| {
                     for (i, equip) in Equipment::iter().enumerate() {
                         ui.checkbox(&mut self.equip_checked[i], equip.to_string());
-                        profile.equipment.switch(equip, self.equip_checked[i]);
+                        equipment.switch(equip, self.equip_checked[i]);
                     }
                 });
 
@@ -178,15 +185,13 @@ impl eframe::App for MainApp {
                         }
                         if ui.button(" - ").clicked() && self.weapon_num > 0 {
                             self.weapon_num -= 1;
-                            profile.weapon[self.weapon_num] = Weapon::default();
+                            weapon[self.weapon_num] = Weapon::default();
                         }
                     });
 
                     ui.separator();
 
-                    for (chunk_i, chunk) in
-                        profile.weapon[..self.weapon_num].chunks_mut(3).enumerate()
-                    {
+                    for (chunk_i, chunk) in weapon[..self.weapon_num].chunks_mut(3).enumerate() {
                         ui.horizontal(|ui| {
                             for (i, weapon) in chunk.iter_mut().enumerate() {
                                 ui.vertical(|ui| {
