@@ -4,6 +4,8 @@
 
 Another save editor for `doukutsu-rs` in rust.
 
+Supports PWA(WIP), Windows, Linux/BSD and MacOS.
+
 ## TODO
 
 - [ ] web support (profile export)
