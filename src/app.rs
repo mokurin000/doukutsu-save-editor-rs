@@ -14,8 +14,7 @@ pub struct MainApp {
     input: String,
     #[cfg(not(target_arch = "wasm32"))]
     path: Option<PathBuf>,
-    profile: Option<GameProfile>,
-    raw_profile: Option<Profile>,
+    profile: Option<(Profile, GameProfile)>,
     weapon_num: usize,
     equip_checked: [bool; 9],
 }
@@ -27,8 +26,8 @@ impl MainApp {
 
     fn verify_and_init(&mut self, data: Profile) -> bool {
         if data.verify() {
-            self.profile = Some(GameProfile::dump(&data));
-            self.raw_profile = Some(data);
+            let game_profile = GameProfile::dump(&data);
+            self.profile = Some((data, game_profile));
             self.weapon_num = self.count_weapon().unwrap();
             self.equip_checked = self.detect_equip().unwrap();
             true
@@ -44,25 +43,29 @@ impl MainApp {
     }
 
     fn detect_equip(&self) -> Option<[bool; 9]> {
-        self.profile.map(|GameProfile { equipment, .. }| {
-            let mut equip_checked: [bool; 9] = Default::default();
+        self.profile
+            .as_ref()
+            .map(|(_, GameProfile { equipment, .. })| {
+                let mut equip_checked: [bool; 9] = Default::default();
 
-            let equip_current = equipment;
-            for (i, equip) in Equipment::iter().enumerate() {
-                equip_checked[i] = equip_current.check(equip);
-            }
+                let equip_current = equipment;
+                for (i, equip) in Equipment::iter().enumerate() {
+                    equip_checked[i] = equip_current.check(equip);
+                }
 
-            equip_checked
-        })
+                equip_checked
+            })
     }
 
     fn count_weapon(&self) -> Option<usize> {
-        self.profile.map(|GameProfile { weapon, .. }| {
-            weapon
-                .iter()
-                .take_while(|w| w.classification != WeaponType::None)
-                .count()
-        })
+        self.profile
+            .as_ref()
+            .map(|(_, GameProfile { weapon, .. })| {
+                weapon
+                    .iter()
+                    .take_while(|w| w.classification != WeaponType::None)
+                    .count()
+            })
     }
 }
 
@@ -127,17 +130,20 @@ impl eframe::App for MainApp {
                 });
             }
 
-            if let Some(GameProfile {
-                position,
-                map,
-                music,
-                health,
-                max_health,
-                weapon,
-                inventory: _,
-                teleporter: _,
-                equipment,
-            }) = &mut self.profile
+            if let Some((
+                _,
+                GameProfile {
+                    position,
+                    map,
+                    music,
+                    health,
+                    max_health,
+                    weapon,
+                    inventory: _,
+                    teleporter: _,
+                    equipment,
+                },
+            )) = &mut self.profile
             {
                 egui::Window::new("Basic").show(ctx, |ui| {
                     ui.add(DragValue::new(health).prefix("heal: "));
@@ -232,19 +238,22 @@ impl eframe::App for MainApp {
             }
 
             ui.horizontal(|ui| {
-                if let Some(raw) = &self.raw_profile {
+                if let Some(profile) = &mut self.profile {
                     if ui.button("Undo all").clicked() {
-                        self.profile = Some(GameProfile::dump(raw));
+                        profile.1 = GameProfile::dump(&profile.0);
+                        let _x = profile;
                         self.weapon_num = self.count_weapon().unwrap();
                         self.equip_checked = self.detect_equip().unwrap();
                     }
+                }
 
+                if let Some(profile) = &self.profile {
                     #[cfg(not(target_arch = "wasm32"))]
                     if ui.button("Save").clicked() {
-                        let mut raw = raw.clone();
+                        let mut modified_profile = profile.0.clone();
                         if let Some(path) = &self.path {
-                            self.profile.unwrap().write(&mut raw);
-                            let bytes: Vec<u8> = raw.into();
+                            profile.1.write(&mut modified_profile);
+                            let bytes: Vec<u8> = modified_profile.into();
                             if let Err(e) = fs::write(path, bytes) {
                                 use rfd::{MessageDialog, MessageLevel};
                                 MessageDialog::new()
@@ -258,14 +267,13 @@ impl eframe::App for MainApp {
 
                     #[cfg(target_arch = "wasm32")]
                     {
-                        let mut raw = raw.clone();
-                        self.profile.unwrap().write(&mut raw);
-                        let bytes: Vec<u8> = raw.into();
+                        let mut modified_profile = profile.0.clone();
+                        profile.1.write(&mut modified_profile);
                         ui.hyperlink_to(
                             "Save",
                             format!(
                                 "data:application/octet-stream;name=profile.dat;base64,{}",
-                                base64::encode(bytes)
+                                base64::encode(Into::<Vec<u8>>::into(modified_profile))
                             ),
                         );
                     }
