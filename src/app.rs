@@ -24,7 +24,7 @@ impl MainApp {
         Default::default()
     }
 
-    fn verify_and_init(&mut self, data: Profile) -> bool {
+    fn verify_and_init(&mut self, data: Vec<u8>) -> Result<(), ProfileError> {
         if data.verify() {
             let game_profile = GameProfile::dump(&data);
             self.profile = Some((data, game_profile));
