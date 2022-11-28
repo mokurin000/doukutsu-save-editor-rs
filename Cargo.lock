@@ -164,9 +164,9 @@ dependencies = [
 
 [[package]]
 name = "cavestory-save-lib"
-version = "2.8.0"
+version = "2.8.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c7278c905044cdc84fec43eca7522033dabc2f147728d06a95188b99931f8df7"
+checksum = "887bbec5ee9f30b29fba19c0b4e6caaf583849cd94a34954dccbac2d30cf4e8f"
 dependencies = [
  "strum",
  "thiserror",

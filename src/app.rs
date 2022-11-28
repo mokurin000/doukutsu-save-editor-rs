@@ -1,7 +1,7 @@
 #[cfg(not(target_arch = "wasm32"))]
 use std::{fs, path::PathBuf};
 
-use cavestory_save::{GameProfile, Profile};
+use cavestory_save::{GameProfile, Profile, ProfileError};
 
 use cavestory_save::items::*;
 use strum::IntoEnumIterator;
@@ -25,20 +25,23 @@ impl MainApp {
     }
 
     fn verify_and_init(&mut self, data: Vec<u8>) -> Result<(), ProfileError> {
-        if data.verify() {
-            let game_profile = GameProfile::dump(&data);
-            self.profile = Some((data, game_profile));
-            self.weapon_num = self.count_weapon().unwrap();
-            self.equip_checked = self.detect_equip().unwrap();
-            true
-        } else {
-            use rfd::{MessageDialog, MessageLevel};
-            MessageDialog::new()
-                .set_level(MessageLevel::Error)
-                .set_title("Load Error")
-                .set_description("Profile.dat head not equal to \"Do041220\"")
-                .show();
-            false
+        match Profile::try_from(data) {
+            Ok(profile) => {
+                let game_profile = GameProfile::dump(&profile);
+                self.profile = Some((profile, game_profile));
+                self.weapon_num = self.count_weapon().unwrap();
+                self.equip_checked = self.detect_equip().unwrap();
+                Ok(())
+            }
+            Err(e) => {
+                use rfd::{MessageDialog, MessageLevel};
+                MessageDialog::new()
+                    .set_level(MessageLevel::Error)
+                    .set_title("Load Error")
+                    .set_description(&e.to_string())
+                    .show();
+                Err(e)
+            }
         }
     }
 
@@ -92,8 +95,8 @@ impl eframe::App for MainApp {
                             .set_title("Pick your game profile")
                             .pick_file();
                         if let Some(path) = path {
-                            let data: Profile = fs::read(&path).unwrap().into();
-                            if self.verify_and_init(data) {
+                            let data: Vec<u8> = fs::read(&path).unwrap();
+                            if self.verify_and_init(data).is_ok() {
                                 self.path = Some(path);
                             }
                         }
@@ -117,7 +120,7 @@ impl eframe::App for MainApp {
                     if ui.button("Load Profile").clicked() {
                         self.input.retain(|c| !c.is_ascii_whitespace());
                         if let Ok(bytes) = base64::decode(&self.input) {
-                            if self.verify_and_init(bytes.into()) {
+                            if self.verify_and_init(bytes.into()).is_ok() {
                                 self.input.clear();
                             }
                         } else {
