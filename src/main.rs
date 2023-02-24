@@ -13,7 +13,8 @@ fn main() {
         "CaveStory Save Editor",
         native_options,
         Box::new(|cc| Box::new(doukutsu_save_editor::MainApp::new(cc))),
-    ).unwrap();
+    )
+    .unwrap();
 }
 
 // when compiling to web using trunk.
