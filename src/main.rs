@@ -13,7 +13,7 @@ fn main() {
         "CaveStory Save Editor",
         native_options,
         Box::new(|cc| Box::new(doukutsu_save_editor::MainApp::new(cc))),
-    );
+    ).unwrap();
 }
 
 // when compiling to web using trunk.
@@ -26,10 +26,14 @@ fn main() {
     tracing_wasm::set_as_global_default();
 
     let web_options = eframe::WebOptions::default();
-    eframe::start_web(
-        "the_canvas_id", // hardcode it
-        web_options,
-        Box::new(|cc| Box::new(doukutsu_save_editor::MainApp::new(cc))),
-    )
-    .expect("failed to start eframe");
+
+    wasm_bindgen_futures::spawn_local(async {
+        eframe::start_web(
+            "the_canvas_id", // hardcode it
+            web_options,
+            Box::new(|cc| Box::new(doukutsu_save_editor::MainApp::new(cc))),
+        )
+        .await
+        .expect("failed to start eframe");
+    });
 }
