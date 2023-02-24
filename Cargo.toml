@@ -3,12 +3,16 @@ name = "doukutsu-save-editor"
 version = "0.1.0"
 authors = ["poly000 <1348292515@qq.com>"]
 edition = "2021"
-rust-version = "1.60"
+rust-version = "1.65"
 license = "MIT"
 
 [dependencies]
 egui = "0.21.0"
-eframe = { version = "0.21.0", features = [] }
+eframe = { version = "0.21.0", default-dependencies = false, features = [
+    "accesskit",     # Make egui comptaible with screen readers. NOTE: adds a lot of dependencies.
+    "default_fonts", # Embed the default egui fonts.
+    "wgpu",          # Use the glow rendering backend. Alternative: "wgpu".
+] }
 cavestory-save-lib = "2.8.2"
 rfd = "0.11.0"
 strum = "0.24.1"
