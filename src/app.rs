@@ -8,15 +8,33 @@ use strum::IntoEnumIterator;
 
 use egui::{DragValue, Slider};
 
+#[cfg(target_arch = "wasm32")]
 #[derive(Default)]
 pub struct MainApp {
-    #[cfg(target_arch = "wasm32")]
     input: String,
-    #[cfg(not(target_arch = "wasm32"))]
+    profile: Option<(Profile, GameProfile)>,
+    weapon_num: usize,
+    equip_checked: [bool; 9],
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+pub struct MainApp {
     path: Option<PathBuf>,
     profile: Option<(Profile, GameProfile)>,
     weapon_num: usize,
     equip_checked: [bool; 9],
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+impl Default for MainApp {
+    fn default() -> Self {
+        MainApp {
+            path: None,
+            profile: None,
+            weapon_num: 0,
+            equip_checked: [false; 9],
+        }
+    }
 }
 
 impl MainApp {
