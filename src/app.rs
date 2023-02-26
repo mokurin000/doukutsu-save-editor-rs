@@ -73,6 +73,15 @@ impl MainApp {
                             .await;
                     });
                 }
+                #[cfg(target_arch = "wasm32")]
+                {
+                    use rfd::{MessageDialog, MessageLevel};
+                    MessageDialog::new()
+                        .set_level(MessageLevel::Error)
+                        .set_title("Load Error")
+                        .set_description(&e.to_string())
+                        .show();
+                }
                 Err(e)
             }
         }
@@ -160,6 +169,8 @@ impl eframe::App for MainApp {
                 use base64::engine::general_purpose::STANDARD;
                 use base64::Engine;
 
+                use rfd::{MessageDialog, MessageLevel};
+
                 ui.label("Paste profile.dat encoded in base64 here:");
 
                 ui.horizontal(|ui| {
@@ -171,18 +182,10 @@ impl eframe::App for MainApp {
                                 self.input.clear();
                             }
                         } else {
-                            #[cfg(not(target_arch = "wasm32"))]
-                            {
-                                use rfd::{AsyncMessageDialog, MessageLevel};
-
-                                tokio::task::spawn(async move {
-                                    AsyncMessageDialog::new()
-                                        .set_description("Invalid base64 code!")
-                                        .set_level(MessageLevel::Error)
-                                        .show()
-                                        .await;
-                                });
-                            }
+                            MessageDialog::new()
+                                .set_description("Invalid base64 code!")
+                                .set_level(MessageLevel::Error)
+                                .show();
                         }
                     }
                 });
