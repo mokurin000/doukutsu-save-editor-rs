@@ -1,4 +1,3 @@
-#[cfg(not(target_arch = "wasm32"))]
 use std::{fs, path::PathBuf};
 
 use cavestory_save::{GameProfile, Profile, ProfileError};
@@ -8,19 +7,8 @@ use strum::IntoEnumIterator;
 
 use egui::{DragValue, Slider};
 
-#[cfg(target_arch = "wasm32")]
-#[derive(Default)]
-pub struct MainApp {
-    input: String,
-    profile: Option<(Profile, GameProfile)>,
-    weapon_num: usize,
-    equip_checked: [bool; 9],
-}
-
-#[cfg(not(target_arch = "wasm32"))]
 use std::sync::mpsc::{Receiver, Sender};
 
-#[cfg(not(target_arch = "wasm32"))]
 pub struct MainApp {
     path: Option<PathBuf>,
     path_sender: Sender<PathBuf>,
@@ -30,7 +18,6 @@ pub struct MainApp {
     equip_checked: [bool; 9],
 }
 
-#[cfg(not(target_arch = "wasm32"))]
 impl Default for MainApp {
     fn default() -> Self {
         let (path_sender, path_receiver) = std::sync::mpsc::channel();
@@ -61,27 +48,15 @@ impl MainApp {
                 Ok(())
             }
             Err(e) => {
-                #[cfg(not(target_arch = "wasm32"))]
-                {
-                    use rfd::{AsyncMessageDialog, MessageLevel};
-                    tokio::task::spawn(async move {
-                        AsyncMessageDialog::new()
-                            .set_level(MessageLevel::Error)
-                            .set_title("Load Error")
-                            .set_description(&e.to_string())
-                            .show()
-                            .await;
-                    });
-                }
-                #[cfg(target_arch = "wasm32")]
-                {
-                    use rfd::{MessageDialog, MessageLevel};
-                    MessageDialog::new()
+                use rfd::{AsyncMessageDialog, MessageLevel};
+                tokio::task::spawn(async move {
+                    AsyncMessageDialog::new()
                         .set_level(MessageLevel::Error)
                         .set_title("Load Error")
                         .set_description(&e.to_string())
-                        .show();
-                }
+                        .show()
+                        .await;
+                });
                 Err(e)
             }
         }
@@ -126,7 +101,6 @@ impl eframe::App for MainApp {
         // Tip: a good default choice is to just keep the `CentralPanel`.
         // For inspiration and more examples, go to https://emilk.github.io/egui
 
-        #[cfg(not(target_arch = "wasm32"))]
         egui::TopBottomPanel::top("top_panel").show(ctx, |ui| {
             if let Ok(path) = self.path_receiver.try_recv() {
                 let data: Vec<u8> = fs::read(&path).unwrap();
@@ -164,33 +138,6 @@ impl eframe::App for MainApp {
         });
 
         egui::CentralPanel::default().show(ctx, |ui| {
-            #[cfg(target_arch = "wasm32")]
-            {
-                use base64::engine::general_purpose::STANDARD;
-                use base64::Engine;
-
-                use rfd::{MessageDialog, MessageLevel};
-
-                ui.label("Paste profile.dat encoded in base64 here:");
-
-                ui.horizontal(|ui| {
-                    ui.text_edit_singleline(&mut self.input);
-                    if ui.button("Load Profile").clicked() {
-                        self.input.retain(|c| !c.is_ascii_whitespace());
-                        if let Ok(bytes) = STANDARD.decode(&self.input) {
-                            if self.verify_and_init(bytes.into()).is_ok() {
-                                self.input.clear();
-                            }
-                        } else {
-                            MessageDialog::new()
-                                .set_description("Invalid base64 code!")
-                                .set_level(MessageLevel::Error)
-                                .show();
-                        }
-                    }
-                });
-            }
-
             if let Some((
                 _,
                 GameProfile {
@@ -294,7 +241,6 @@ impl eframe::App for MainApp {
                     }
                 });
             } else {
-                #[cfg(not(target_arch = "wasm32"))]
                 ui.label("Please load profile.dat");
             }
 
@@ -309,7 +255,6 @@ impl eframe::App for MainApp {
                 }
 
                 if let Some(profile) = &self.profile {
-                    #[cfg(not(target_arch = "wasm32"))]
                     if ui.button("Save").clicked() {
                         let mut modified_profile = profile.0.clone();
                         if let Some(path) = &self.path {
@@ -327,22 +272,6 @@ impl eframe::App for MainApp {
                                 });
                             }
                         }
-                    }
-
-                    #[cfg(target_arch = "wasm32")]
-                    {
-                        use base64::engine::general_purpose::STANDARD;
-                        use base64::Engine;
-
-                        let mut modified_profile = profile.0.clone();
-                        profile.1.write(&mut modified_profile);
-                        ui.hyperlink_to(
-                            "Save",
-                            format!(
-                                "data:application/octet-stream;name=profile.dat;base64,{}",
-                                STANDARD.encode(Vec::<u8>::from(modified_profile))
-                            ),
-                        );
                     }
                 }
             });
