@@ -18,8 +18,13 @@ pub struct MainApp {
 }
 
 #[cfg(not(target_arch = "wasm32"))]
+use std::sync::mpsc::{Receiver, Sender};
+
+#[cfg(not(target_arch = "wasm32"))]
 pub struct MainApp {
     path: Option<PathBuf>,
+    path_sender: Sender<PathBuf>,
+    path_receiver: Receiver<PathBuf>,
     profile: Option<(Profile, GameProfile)>,
     weapon_num: usize,
     equip_checked: [bool; 9],
@@ -28,8 +33,12 @@ pub struct MainApp {
 #[cfg(not(target_arch = "wasm32"))]
 impl Default for MainApp {
     fn default() -> Self {
+        let (path_sender, path_receiver) = std::sync::mpsc::channel();
+
         MainApp {
             path: None,
+            path_sender,
+            path_receiver,
             profile: None,
             weapon_num: 0,
             equip_checked: [false; 9],
@@ -52,12 +61,15 @@ impl MainApp {
                 Ok(())
             }
             Err(e) => {
-                use rfd::{MessageDialog, MessageLevel};
-                MessageDialog::new()
-                    .set_level(MessageLevel::Error)
-                    .set_title("Load Error")
-                    .set_description(&e.to_string())
-                    .show();
+                use rfd::{AsyncMessageDialog, MessageLevel};
+                tokio::task::spawn(async move {
+                    AsyncMessageDialog::new()
+                        .set_level(MessageLevel::Error)
+                        .set_title("Load Error")
+                        .set_description(&e.to_string())
+                        .show()
+                        .await;
+                });
                 Err(e)
             }
         }
@@ -104,20 +116,33 @@ impl eframe::App for MainApp {
 
         #[cfg(not(target_arch = "wasm32"))]
         egui::TopBottomPanel::top("top_panel").show(ctx, |ui| {
-            use rfd::FileDialog;
+            if let Ok(path) = self.path_receiver.try_recv() {
+                let data: Vec<u8> = fs::read(&path).unwrap();
+                if self.verify_and_init(data).is_ok() {
+                    self.path = Some(path);
+                }
+            }
+
             egui::menu::bar(ui, |ui| {
                 ui.menu_button("File", |ui| {
                     if ui.button("Open").clicked() {
-                        let path = FileDialog::default()
-                            .add_filter("Profile", &["dat"])
-                            .set_title("Pick your game profile")
-                            .pick_file();
-                        if let Some(path) = path {
-                            let data: Vec<u8> = fs::read(&path).unwrap();
-                            if self.verify_and_init(data).is_ok() {
-                                self.path = Some(path);
+                        use rfd::AsyncFileDialog;
+
+                        let tx = self.path_sender.clone();
+                        let ctx = ctx.clone();
+
+                        tokio::task::spawn(async move {
+                            let path = AsyncFileDialog::default()
+                                .add_filter("Profile", &["dat"])
+                                .set_title("Pick your game profile")
+                                .pick_file()
+                                .await;
+                            if let Some(path) = path {
+                                let path = path.into();
+                                let _ = tx.send(path);
+                                ctx.request_repaint();
                             }
-                        }
+                        });
                     }
                     if ui.button("Quit").clicked() {
                         _frame.close();
@@ -132,7 +157,7 @@ impl eframe::App for MainApp {
                 use base64::engine::general_purpose::STANDARD;
                 use base64::Engine;
 
-                use rfd::{MessageDialog, MessageLevel};
+                use rfd::{AsyncMessageDialog, MessageLevel};
 
                 ui.label("Paste profile.dat encoded in base64 here:");
 
@@ -145,10 +170,13 @@ impl eframe::App for MainApp {
                                 self.input.clear();
                             }
                         } else {
-                            MessageDialog::new()
-                                .set_description("Invalid base64 code!")
-                                .set_level(MessageLevel::Error)
-                                .show();
+                            tokio::task::spawn(async move {
+                                AsyncMessageDialog::new()
+                                    .set_description("Invalid base64 code!")
+                                    .set_level(MessageLevel::Error)
+                                    .show()
+                                    .await;
+                            });
                         }
                     }
                 });
@@ -279,12 +307,15 @@ impl eframe::App for MainApp {
                             profile.1.write(&mut modified_profile);
                             let bytes: Vec<u8> = modified_profile.into();
                             if let Err(e) = fs::write(path, bytes) {
-                                use rfd::{MessageDialog, MessageLevel};
-                                MessageDialog::new()
-                                    .set_level(MessageLevel::Error)
-                                    .set_description(&e.to_string())
-                                    .set_title("Error occured while saving!")
-                                    .show();
+                                use rfd::{AsyncMessageDialog, MessageLevel};
+                                tokio::task::spawn(async move {
+                                    AsyncMessageDialog::new()
+                                        .set_level(MessageLevel::Error)
+                                        .set_description(&e.to_string())
+                                        .set_title("Error occured on saving!")
+                                        .show()
+                                        .await;
+                                });
                             }
                         }
                     }
