@@ -20,6 +20,8 @@ yay -S doukutsu-save-editor
 cargo install --path .
 ```
 
+This will place the binary to `~/.cargo/bin`. If you cannot execute `doukutsu-save-editor`, please check your `PATH`.
+
 ## Build Dependencies
 
 We use [GTK3 backend](https://docs.rs/rfd/latest/rfd/#linux--bsd-backends) on GNU/Linux and *BSD for `rfd`.
