@@ -13,7 +13,7 @@ eframe = { version = "0.21.0", default-dependencies = false, features = [
     "default_fonts", # Embed the default egui fonts.
     "wgpu",          # Use the glow rendering backend. Alternative: "wgpu".
 ] }
-cavestory-save-lib = "2.8.2"
+cavestory-save-lib = "2.8.3"
 strum = "0.24.1"
 rfd = "0.11.0"
 
