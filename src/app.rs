@@ -9,6 +9,9 @@ use egui::{DragValue, Slider};
 
 use std::sync::mpsc::{Receiver, Sender};
 
+use tap::pipe::Pipe;
+
+
 pub struct MainApp {
     path: Option<PathBuf>,
     path_sender: Sender<PathBuf>,
@@ -112,23 +115,21 @@ impl eframe::App for MainApp {
             egui::menu::bar(ui, |ui| {
                 ui.menu_button("File", |ui| {
                     if ui.button("Open").clicked() {
-                        use rfd::AsyncFileDialog;
-
-                        let tx = self.path_sender.clone();
-                        let ctx = ctx.clone();
-
-                        tokio::task::spawn(async move {
-                            let path = AsyncFileDialog::default()
-                                .add_filter("Profile", &["dat"])
-                                .set_title("Pick your game profile")
-                                .pick_file()
-                                .await;
-                            if let Some(path) = path {
-                                let path = path.into();
-                                let _ = tx.send(path);
-                                ctx.request_repaint();
-                            }
-                        });
+                        (self.path_sender.clone(), ctx.clone())
+                            .pipe(|(tx, ctx)| async move {
+                                use rfd::AsyncFileDialog;
+                                let path = AsyncFileDialog::default()
+                                    .add_filter("Profile", &["dat"])
+                                    .set_title("Pick your game profile")
+                                    .pick_file()
+                                    .await;
+                                if let Some(path) = path {
+                                    let path = path.into();
+                                    let _ = tx.send(path);
+                                    ctx.request_repaint();
+                                }
+                            })
+                            .pipe(tokio::task::spawn);
                     }
                     if ui.button("Quit").clicked() {
                         _frame.close();
@@ -248,7 +249,7 @@ impl eframe::App for MainApp {
                 if let Some(profile) = &mut self.profile {
                     if ui.button("Undo all").clicked() {
                         profile.1 = GameProfile::dump(&profile.0);
-                        let _x = profile;
+                        let _ = profile;
                         self.weapon_num = self.count_weapon().unwrap();
                         self.equip_checked = self.detect_equip().unwrap();
                     }
