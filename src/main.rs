@@ -5,7 +5,8 @@ fn main() {
     use tokio::runtime::Runtime;
     use tokio::time;
 
-    use eframe::NativeOptions;
+    let mut native_options = eframe::NativeOptions::default();
+    native_options.follow_system_theme = true;
 
     // Log to stdout (if you run with `RUST_LOG=debug`).
     tracing_subscriber::fmt::init();
@@ -23,7 +24,7 @@ fn main() {
 
     eframe::run_native(
         "CaveStory Save Editor",
-        NativeOptions::default(),
+        native_options,
         Box::new(|cc| Box::new(doukutsu_save_editor::MainApp::new(cc))),
     )
     .unwrap();

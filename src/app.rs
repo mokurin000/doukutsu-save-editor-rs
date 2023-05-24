@@ -11,7 +11,6 @@ use std::sync::mpsc::{Receiver, Sender};
 
 use tap::pipe::Pipe;
 
-
 pub struct MainApp {
     path: Option<PathBuf>,
     path_sender: Sender<PathBuf>,
