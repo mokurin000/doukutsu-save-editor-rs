@@ -3,7 +3,7 @@ use std::{fs, path::PathBuf};
 use cavestory_save::{GameProfile, Profile, ProfileError};
 
 use cavestory_save::items::*;
-use strum::IntoEnumIterator;
+use cavestory_save::strum::IntoEnumIterator;
 
 use egui::{DragValue, Slider};
 
@@ -131,7 +131,7 @@ impl eframe::App for MainApp {
                             .pipe(tokio::task::spawn);
                     }
                     if ui.button("Quit").clicked() {
-                        _frame.close();
+                        ctx.send_viewport_cmd(egui::ViewportCommand::Close)
                     }
                 });
             });
@@ -308,16 +308,6 @@ impl eframe::App for MainApp {
     }
 
     fn persist_egui_memory(&self) -> bool {
-        true
-    }
-
-    fn warm_up_enabled(&self) -> bool {
-        false
-    }
-
-    fn post_rendering(&mut self, _window_size_px: [u32; 2], _frame: &eframe::Frame) {}
-
-    fn on_close_event(&mut self) -> bool {
         true
     }
 }
