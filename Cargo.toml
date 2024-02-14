@@ -7,7 +7,7 @@ rust-version = "1.65"
 license = "MIT"
 
 [dependencies]
-egui = { version = "=0.26.0" }
+egui = { version = "=0.26.1" }
 eframe = { version = "=0.26.0", features = [
     "accesskit",     # Make egui comptaible with screen readers. NOTE: adds a lot of dependencies.
     "default_fonts", # Embed the default egui fonts.
