@@ -111,6 +111,14 @@ impl eframe::App for MainApp {
                 }
             }
 
+            ctx.input(|i| {
+                let dropped_files = &i.raw.hovered_files;
+
+                if let Some(Some(path)) = dropped_files.get(0).map(|df| &df.path) {
+                    let _ = self.path_sender.send(path.clone());
+                }
+            });
+
             egui::menu::bar(ui, |ui| {
                 ui.menu_button("File", |ui| {
                     if ui.button("Open").clicked() {
@@ -242,6 +250,7 @@ impl eframe::App for MainApp {
                 });
             } else {
                 ui.label("Please load profile.dat");
+                ui.label("You can drag it here");
             }
 
             ui.horizontal(|ui| {

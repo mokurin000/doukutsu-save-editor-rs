@@ -8,6 +8,7 @@ fn main() {
     let native_options = eframe::NativeOptions {
         follow_system_theme: true,
         persist_window: true,
+        viewport: egui::ViewportBuilder::default().with_drag_and_drop(true),
         ..Default::default()
     };
 
@@ -25,8 +26,9 @@ fn main() {
         });
     });
 
+    let app_name = "CaveStory Save Editor";
     eframe::run_native(
-        "CaveStory Save Editor",
+        app_name,
         native_options,
         Box::new(|cc| Box::new(doukutsu_save_editor::MainApp::new(cc))),
     )
