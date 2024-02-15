@@ -55,7 +55,7 @@ jobs:
         shell: bash
         run: |
           editor_ver=$(cargo metadata --format-version 1 --no-deps | sed -r 's/.*"version":"([^"]*)".*/\1/')
-          echo "petpet_ver=${petpet_ver}" >> $GITHUB_OUTPUT
+          echo "editor_ver=${editor_ver}" >> $GITHUB_OUTPUT
 
       - name: Pre-Release
         uses: softprops/action-gh-release@v1
