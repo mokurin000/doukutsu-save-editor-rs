@@ -28,6 +28,7 @@ incremental = true
 
 [profile.release]
 lto = "thin"
+panic = "abort"
 strip = true
 
 # Optimize all dependencies even in debug builds:
