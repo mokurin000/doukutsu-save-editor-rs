@@ -27,7 +27,7 @@ winapi = { version = "0.3.9", features = ["winuser"] }
 incremental = true
 
 [profile.release]
-lto = true
+lto = "thin"
 strip = true
 
 # Optimize all dependencies even in debug builds:
