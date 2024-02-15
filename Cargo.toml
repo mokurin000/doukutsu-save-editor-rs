@@ -8,26 +8,37 @@ license = "MIT"
 
 [dependencies]
 egui = { version = "0.26.2" }
-eframe = { version = "0.26.1", features = [
-    "accesskit",     # Make egui comptaible with screen readers. NOTE: adds a lot of dependencies.
-    "default_fonts", # Embed the default egui fonts.
-    "glow",          # Use the glow rendering backend. Alternative: "wgpu".
-    "persistence",
-] }
 cavestory-save-lib = "2.9.1"
 rfd = "0.13.0"
 tracing-subscriber = "0.3"
 tokio = { version = "1.36", features = ["rt-multi-thread", "time"] }
 tap = "1.0.1"
+winit = "0.29"
 
-[target.'cfg(windows)'.dependencies]
-winapi = { version = "0.3.9", features = ["winuser"] }
+[target.'cfg(unix)'.dependencies]
+eframe = { version = "0.26.2", features = [
+    "glow",    # Use the glow rendering backend. Alternative: "wgpu".
+    "x11",
+    "wayland",
+], default-features = false }
+
+[target.'cfg(not(unix))'.dependencies]
+eframe = { version = "0.26.2", features = [
+    "glow", # Use the glow rendering backend. Alternative: "wgpu".
+], default-features = false }
+
+[features]
+default = ["winit/default"]
+# Embed the default egui fonts.
+default_fonts = ["eframe/default_fonts"]
+# Make egui comptaible with screen readers. NOTE: adds a lot of dependencies.
+accesskit = ["eframe/accesskit"]
 
 [profile.dev]
 incremental = true
 
 [profile.release]
-lto = "thin"
+lto = true
 panic = "abort"
 strip = true
 
