@@ -111,13 +111,17 @@ impl eframe::App for MainApp {
                 }
             }
 
-            ctx.input(|i| {
+            let dragged_path = ctx.input(|i| {
                 let dropped_files = &i.raw.hovered_files;
 
-                if let Some(Some(path)) = dropped_files.get(0).map(|df| &df.path) {
-                    let _ = self.path_sender.send(path.clone());
-                }
+                let file = dropped_files.get(0).map(|df| &df.path).cloned().flatten();
+                file
             });
+
+            if let Some(path) = dragged_path {
+                let _ = self.path_sender.send(path);
+                ctx.input_mut(|i| i.raw.hovered_files.clear());
+            }
 
             egui::menu::bar(ui, |ui| {
                 ui.menu_button("File", |ui| {
