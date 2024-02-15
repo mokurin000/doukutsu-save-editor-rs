@@ -1,0 +1,69 @@
+# Origin config by @Kilerd
+
+name: Build Canary Version
+
+on:
+  push:
+    tags:
+      - v*
+
+jobs:
+  release:
+    name: Release on ${{ matrix.platform }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        platform: [linux_glibc-x86_64, linux_musl-x86_64, windows-x86_64]
+        include:
+        
+          - platform: linux_glibc-x86_64
+            target: x86_64-unknown-linux-gnu
+            os: ubuntu-latest
+            bin: doukutsu-save-editor
+            
+          - platform: linux_musl-x86_64
+            target: x86_64-unknown-linux-musl
+            os: ubuntu-latest
+            bin: doukutsu-save-editor
+        
+          - platform: windows-x86_64
+            target: x86_64-pc-windows-msvc
+            os: windows-latest
+            bin: doukutsu-save-editor.exe
+            
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+          toolchain: stable
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install libxcb-render0-dev libxcb-shape0-dev libxcb-xfixes0-dev libspeechd-dev libxkbcommon-dev libssl-dev libgtk-3-dev libatk-bridge2.0-dev
+
+      - name: Build executable
+        run: cargo build --release --target ${{ matrix.target }}
+
+      - name: Prepare assets
+        shell: bash
+        run: |
+          mv target/${{ matrix.target }}/release/${{ matrix.bin }} .          
+          tar -cvzf ${{ matrix.target }}.tar.gz LICENSE ${{ matrix.bin }}
+        
+      - name: Declare some variables # https://stackoverflow.com/a/61699863
+        id: vars
+        shell: bash
+        run: |
+          editor_ver=$(cargo metadata --format-version 1 --no-deps | sed -r 's/.*"version":"([^"]*)".*/\1/')
+          echo "petpet_ver=${petpet_ver}" >> $GITHUB_OUTPUT
+
+      - name: Pre-Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: ${{ matrix.target }}.tar.gz
+          tag_name: v${{ steps.vars.outputs.editor_ver }}
+          prerelease: false
