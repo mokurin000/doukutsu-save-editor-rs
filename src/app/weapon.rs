@@ -18,11 +18,12 @@ pub fn draw_window(ui: &mut Ui, weapon_num: &mut usize, weapon: &mut [Weapon]) {
 
     ui.separator();
 
-    for (chunk_i, chunk) in weapon[..*weapon_num].chunks_mut(3).enumerate() {
+    let chunk_size = 3;
+    for (chunk_i, chunk) in weapon[..*weapon_num].chunks_mut(chunk_size).enumerate() {
         ui.horizontal(|ui| {
             for (i, weapon) in chunk.iter_mut().enumerate() {
                 ui.vertical(|ui| {
-                    egui::ComboBox::new(format!("weapontype-box-{}", chunk_i * 3 + i), "")
+                    egui::ComboBox::new(format!("weapontype-box-{}", chunk_i * chunk_size + i), "")
                         .width(150.)
                         .selected_text(weapon.classification.to_string())
                         .show_ui(ui, |ui| {
