@@ -1,6 +1,6 @@
 use std::{fs, path::PathBuf};
 
-use cavestory_save::{GameProfile, Profile, ProfileError};
+use cavestory_save::{GameProfile, Profile};
 
 use cavestory_save::items::*;
 use cavestory_save::strum::IntoEnumIterator;
@@ -9,12 +9,15 @@ use std::sync::mpsc::{Receiver, Sender};
 
 use tap::pipe::Pipe;
 
+use self::utils::ProfileExt;
+
 pub struct MainApp {
     path: Option<PathBuf>,
     path_sender: Sender<PathBuf>,
     path_receiver: Receiver<PathBuf>,
     profile: Option<(Profile, GameProfile)>,
     weapon_num: usize,
+    inventory_num: usize,
     equip_checked: [bool; 9],
 }
 
@@ -28,6 +31,7 @@ impl Default for MainApp {
             path_receiver,
             profile: None,
             weapon_num: 0,
+            inventory_num: 0,
             equip_checked: [false; 9],
         }
     }
@@ -36,56 +40,6 @@ impl Default for MainApp {
 impl MainApp {
     pub fn new(_cc: &eframe::CreationContext<'_>) -> Self {
         Default::default()
-    }
-
-    fn verify_and_init(&mut self, data: Vec<u8>) -> Result<(), ProfileError> {
-        match Profile::try_from(data) {
-            Ok(profile) => {
-                let game_profile = GameProfile::dump(&profile);
-                self.profile = Some((profile, game_profile));
-                self.weapon_num = self.count_weapon().unwrap();
-                self.equip_checked = self.detect_equip().unwrap();
-                Ok(())
-            }
-            Err(e) => {
-                use rfd::{AsyncMessageDialog, MessageLevel};
-                tokio::task::spawn(async move {
-                    AsyncMessageDialog::new()
-                        .set_level(MessageLevel::Error)
-                        .set_title("Load Error")
-                        .set_description(&e.to_string())
-                        .show()
-                        .await;
-                });
-                Err(e)
-            }
-        }
-    }
-
-    fn detect_equip(&self) -> Option<[bool; 9]> {
-        self.profile
-            .as_ref()
-            .map(|(_, GameProfile { equipment, .. })| {
-                let mut equip_checked: [bool; 9] = Default::default();
-
-                let equip_current = equipment;
-                for (i, equip) in Equipment::iter().enumerate() {
-                    equip_checked[i] = equip_current.check(equip);
-                }
-
-                equip_checked
-            })
-    }
-
-    fn count_weapon(&self) -> Option<usize> {
-        self.profile
-            .as_ref()
-            .map(|(_, GameProfile { weapon, .. })| {
-                weapon
-                    .iter()
-                    .take_while(|w| w.classification != WeaponType::None)
-                    .count()
-            })
     }
 }
 
@@ -147,9 +101,7 @@ impl eframe::App for MainApp {
                 if let Some(profile) = &mut self.profile {
                     if ui.button("Undo all").clicked() {
                         profile.1 = GameProfile::dump(&profile.0);
-                        let _ = profile;
-                        self.weapon_num = self.count_weapon().unwrap();
-                        self.equip_checked = self.detect_equip().unwrap();
+                        self.update_state();
                     }
                 }
 
@@ -226,6 +178,10 @@ impl eframe::App for MainApp {
             egui::Window::new("Weapons").show(ctx, |ui| {
                 weapon::draw_window(ui, &mut self.weapon_num, weapon);
             });
+
+            egui::Window::new("Inventory").show(ctx, |ui| {
+                inventory::draw_window(ui, &mut self.inventory_num, inventory);
+            });
         });
     }
 
@@ -250,4 +206,7 @@ impl eframe::App for MainApp {
 }
 
 mod basic;
+mod inventory;
 mod weapon;
+
+mod utils;
