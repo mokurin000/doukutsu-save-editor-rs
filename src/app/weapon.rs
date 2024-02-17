@@ -4,10 +4,12 @@ use cavestory_save::{
 };
 use egui::{DragValue, Slider, Ui};
 
+const MAX_WEAPON_NUM: usize = 7;
+
 pub fn draw_window(ui: &mut Ui, weapon_num: &mut usize, weapon: &mut [Weapon]) {
     ui.horizontal(|ui| {
         // do not set the 8th weapon, you may go into issue.
-        if ui.button(" + ").clicked() && *weapon_num < 7 {
+        if ui.button(" + ").clicked() && *weapon_num < MAX_WEAPON_NUM {
             *weapon_num += 1
         }
         if ui.button(" - ").clicked() && *weapon_num > 0 {
