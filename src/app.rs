@@ -98,31 +98,26 @@ impl eframe::App for MainApp {
     /// Called each time the UI needs repainting, which may be many times per second.
     /// Put your widgets into a `SidePanel`, `TopPanel`, `CentralPanel`, `Window` or `Area`.
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
-        // Examples of how to create different panels and windows.
-        // Pick whichever suits you.
-        // Tip: a good default choice is to just keep the `CentralPanel`.
-        // For inspiration and more examples, go to https://emilk.github.io/egui
+        if let Ok(path) = self.path_receiver.try_recv() {
+            let data: Vec<u8> = fs::read(&path).unwrap();
+            if self.verify_and_init(data).is_ok() {
+                self.path = Some(path);
+            }
+        }
+
+        let dragged_path = ctx.input(|i| {
+            let dropped_files = &i.raw.hovered_files;
+
+            let file = dropped_files.get(0).map(|df| &df.path).cloned().flatten();
+            file
+        });
+
+        if let Some(path) = dragged_path {
+            let _ = self.path_sender.send(path);
+            ctx.input_mut(|i| i.raw.hovered_files.clear());
+        }
 
         egui::TopBottomPanel::top("top_panel").show(ctx, |ui| {
-            if let Ok(path) = self.path_receiver.try_recv() {
-                let data: Vec<u8> = fs::read(&path).unwrap();
-                if self.verify_and_init(data).is_ok() {
-                    self.path = Some(path);
-                }
-            }
-
-            let dragged_path = ctx.input(|i| {
-                let dropped_files = &i.raw.hovered_files;
-
-                let file = dropped_files.get(0).map(|df| &df.path).cloned().flatten();
-                file
-            });
-
-            if let Some(path) = dragged_path {
-                let _ = self.path_sender.send(path);
-                ctx.input_mut(|i| i.raw.hovered_files.clear());
-            }
-
             egui::menu::bar(ui, |ui| {
                 ui.menu_button("File", |ui| {
                     if ui.button("Open").clicked() {
@@ -150,113 +145,6 @@ impl eframe::App for MainApp {
         });
 
         egui::CentralPanel::default().show(ctx, |ui| {
-            if let Some((
-                _,
-                GameProfile {
-                    position,
-                    map,
-                    music,
-                    health,
-                    max_health,
-                    weapon,
-                    inventory: _,
-                    teleporter: _,
-                    equipment,
-                },
-            )) = &mut self.profile
-            {
-                egui::Window::new("Basic").show(ctx, |ui| {
-                    ui.add(DragValue::new(health).prefix("heal: "));
-                    ui.add(DragValue::new(max_health).prefix("max heal: "));
-
-                    ui.label("BGM");
-                    egui::ComboBox::new("background_music", "")
-                        .selected_text(music.to_string())
-                        .width(200.)
-                        .show_ui(ui, |ui| {
-                            for bg_music in Song::iter() {
-                                ui.selectable_value(music, bg_music, bg_music.to_string());
-                            }
-                        });
-
-                    ui.label("Map");
-                    egui::ComboBox::new("map", "")
-                        .selected_text(map.to_string())
-                        .width(200.)
-                        .show_ui(ui, |ui| {
-                            for map_option in Map::iter() {
-                                ui.selectable_value(map, map_option, map_option.to_string());
-                            }
-                        });
-
-                    ui.label("Position");
-                    ui.horizontal(|ui| {
-                        ui.add(DragValue::new(&mut position.x).prefix("x: "));
-                        ui.add(DragValue::new(&mut position.y).prefix("y: "));
-                    });
-                });
-
-                egui::Window::new("Equipments").show(ctx, |ui| {
-                    for (i, equip) in Equipment::iter().enumerate() {
-                        ui.checkbox(&mut self.equip_checked[i], equip.to_string());
-                        equipment.switch(equip, self.equip_checked[i]);
-                    }
-                });
-
-                egui::Window::new("Weapons").show(ctx, |ui| {
-                    ui.horizontal(|ui| {
-                        // do not set the 8th weapon, you may go into issue.
-                        if ui.button(" + ").clicked() && self.weapon_num < 7 {
-                            self.weapon_num += 1
-                        }
-                        if ui.button(" - ").clicked() && self.weapon_num > 0 {
-                            self.weapon_num -= 1;
-                            weapon[self.weapon_num] = Weapon::default();
-                        }
-                    });
-
-                    ui.separator();
-
-                    for (chunk_i, chunk) in weapon[..self.weapon_num].chunks_mut(3).enumerate() {
-                        ui.horizontal(|ui| {
-                            for (i, weapon) in chunk.iter_mut().enumerate() {
-                                ui.vertical(|ui| {
-                                    egui::ComboBox::new(
-                                        format!("weapontype-box-{}", chunk_i * 3 + i),
-                                        "",
-                                    )
-                                    .width(150.)
-                                    .selected_text(weapon.classification.to_string())
-                                    .show_ui(ui, |ui| {
-                                        for model in WeaponType::iter() {
-                                            ui.selectable_value(
-                                                &mut weapon.classification,
-                                                model,
-                                                model.to_string(),
-                                            );
-                                        }
-                                    });
-                                    if weapon.classification != WeaponType::None {
-                                        ui.label("level");
-                                        ui.add(Slider::new(&mut weapon.level, 0..=3));
-
-                                        ui.add(DragValue::new(&mut weapon.ammo).prefix("ammo: "));
-                                        ui.add(
-                                            DragValue::new(&mut weapon.max_ammo)
-                                                .prefix("max ammo: "),
-                                        );
-                                        ui.add(DragValue::new(&mut weapon.exp).prefix("exp: "));
-                                    }
-                                });
-                            }
-                        });
-                    }
-                });
-            } else {
-                ui.label("Please load profile.dat");
-                ui.label("You can drag it here");
-            }
-
             ui.horizontal(|ui| {
                 if let Some(profile) = &mut self.profile {
                     if ui.button("Undo all").clicked() {
@@ -289,6 +177,11 @@ impl eframe::App for MainApp {
                 }
             });
 
+            if self.profile.is_none() {
+                ui.label("Please load profile.dat");
+                ui.label("You can drag it here");
+            }
+
             ui.with_layout(egui::Layout::bottom_up(egui::Align::LEFT), |ui| {
                 ui.horizontal(|ui| {
                     ui.spacing_mut().item_spacing.x = 0.0;
@@ -301,6 +194,127 @@ impl eframe::App for MainApp {
                     );
                     ui.label(".");
                 });
+            });
+
+            let Some((
+                _,
+                GameProfile {
+                    position,
+                    map,
+                    music,
+                    health,
+                    max_health,
+                    weapon,
+                    inventory,
+                    teleporter: _,
+                    equipment,
+                },
+            )) = &mut self.profile
+            else {
+                return;
+            };
+
+            egui::Window::new("Basic").show(ctx, |ui| {
+                ui.horizontal(|ui| {
+                    ui.label("heal");
+                    ui.add(DragValue::new(health));
+                });
+                ui.horizontal(|ui| {
+                    ui.label("max heal ");
+                    ui.add(DragValue::new(max_health));
+                });
+
+                ui.label("BGM");
+                egui::ComboBox::new("background_music", "")
+                    .selected_text(music.to_string())
+                    .width(200.)
+                    .show_ui(ui, |ui| {
+                        for bg_music in Song::iter() {
+                            ui.selectable_value(music, bg_music, bg_music.to_string());
+                        }
+                    });
+
+                ui.label("Map");
+                egui::ComboBox::new("map", "")
+                    .selected_text(map.to_string())
+                    .width(200.)
+                    .show_ui(ui, |ui| {
+                        for map_option in Map::iter() {
+                            ui.selectable_value(map, map_option, map_option.to_string());
+                        }
+                    });
+
+                ui.label("Position");
+                ui.horizontal(|ui| {
+                    ui.label("x: ");
+                    ui.add(DragValue::new(&mut position.x));
+                    ui.label("y: ");
+                    ui.add(DragValue::new(&mut position.y));
+                });
+            });
+
+            egui::Window::new("Equipments").show(ctx, |ui| {
+                for (i, equip) in Equipment::iter().enumerate() {
+                    ui.checkbox(&mut self.equip_checked[i], equip.to_string());
+                    equipment.switch(equip, self.equip_checked[i]);
+                }
+            });
+
+            egui::Window::new("Weapons").show(ctx, |ui| {
+                ui.horizontal(|ui| {
+                    // do not set the 8th weapon, you may go into issue.
+                    if ui.button(" + ").clicked() && self.weapon_num < 7 {
+                        self.weapon_num += 1
+                    }
+                    if ui.button(" - ").clicked() && self.weapon_num > 0 {
+                        self.weapon_num -= 1;
+                        weapon[self.weapon_num] = Weapon::default();
+                    }
+                });
+
+                ui.separator();
+
+                for (chunk_i, chunk) in weapon[..self.weapon_num].chunks_mut(3).enumerate() {
+                    ui.horizontal(|ui| {
+                        for (i, weapon) in chunk.iter_mut().enumerate() {
+                            ui.vertical(|ui| {
+                                egui::ComboBox::new(
+                                    format!("weapontype-box-{}", chunk_i * 3 + i),
+                                    "",
+                                )
+                                .width(150.)
+                                .selected_text(weapon.classification.to_string())
+                                .show_ui(ui, |ui| {
+                                    for model in WeaponType::iter() {
+                                        ui.selectable_value(
+                                            &mut weapon.classification,
+                                            model,
+                                            model.to_string(),
+                                        );
+                                    }
+                                });
+                                if weapon.classification != WeaponType::None {
+                                    ui.horizontal(|ui| {
+                                        ui.label("level");
+                                        ui.add(Slider::new(&mut weapon.level, 0..=3));
+                                    });
+                                    ui.horizontal(|ui| {
+                                        ui.label("ammo");
+                                        ui.add(DragValue::new(&mut weapon.ammo));
+                                    });
+                                    ui.horizontal(|ui| {
+                                        ui.label("max ammo");
+                                        ui.add(DragValue::new(&mut weapon.max_ammo));
+                                    });
+                                    ui.horizontal(|ui| {
+                                        ui.label("exp");
+                                        ui.add(DragValue::new(&mut weapon.exp));
+                                    });
+                                }
+                            });
+                        }
+                    });
+                }
             });
         });
     }
