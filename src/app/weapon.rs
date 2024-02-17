@@ -9,10 +9,17 @@ const MAX_WEAPON_NUM: usize = 7;
 pub fn draw_window(ui: &mut Ui, weapon_num: &mut usize, weapon: &mut [Weapon]) {
     ui.horizontal(|ui| {
         // do not set the 8th weapon, you may go into issue.
-        if ui.button(" + ").clicked() && *weapon_num < MAX_WEAPON_NUM {
+        if (*weapon_num == 0
+            || weapon
+                .get(*weapon_num - 1)
+                .is_some_and(|w| w.classification != WeaponType::None))
+            && *weapon_num < MAX_WEAPON_NUM
+            && ui.button(" + ").clicked()
+        {
             *weapon_num += 1
         }
-        if ui.button(" - ").clicked() && *weapon_num > 0 {
+
+        if *weapon_num > 0 && ui.button(" - ").clicked() {
             *weapon_num -= 1;
             weapon[*weapon_num] = Weapon::default();
         }
