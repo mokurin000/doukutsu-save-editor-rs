@@ -5,8 +5,6 @@ use cavestory_save::{GameProfile, Profile, ProfileError};
 use cavestory_save::items::*;
 use cavestory_save::strum::IntoEnumIterator;
 
-use egui::{DragValue, Slider};
-
 use std::sync::mpsc::{Receiver, Sender};
 
 use tap::pipe::Pipe;
@@ -215,42 +213,7 @@ impl eframe::App for MainApp {
             };
 
             egui::Window::new("Basic").show(ctx, |ui| {
-                ui.horizontal(|ui| {
-                    ui.label("heal");
-                    ui.add(DragValue::new(health));
-                });
-                ui.horizontal(|ui| {
-                    ui.label("max heal ");
-                    ui.add(DragValue::new(max_health));
-                });
-
-                ui.label("BGM");
-                egui::ComboBox::new("background_music", "")
-                    .selected_text(music.to_string())
-                    .width(200.)
-                    .show_ui(ui, |ui| {
-                        for bg_music in Song::iter() {
-                            ui.selectable_value(music, bg_music, bg_music.to_string());
-                        }
-                    });
-
-                ui.label("Map");
-                egui::ComboBox::new("map", "")
-                    .selected_text(map.to_string())
-                    .width(200.)
-                    .show_ui(ui, |ui| {
-                        for map_option in Map::iter() {
-                            ui.selectable_value(map, map_option, map_option.to_string());
-                        }
-                    });
-
-                ui.label("Position");
-                ui.horizontal(|ui| {
-                    ui.label("x: ");
-                    ui.add(DragValue::new(&mut position.x));
-                    ui.label("y: ");
-                    ui.add(DragValue::new(&mut position.y));
-                });
+                basic::draw_window(ui, health, max_health, music, map, position);
             });
 
             egui::Window::new("Equipments").show(ctx, |ui| {
@@ -261,60 +224,7 @@ impl eframe::App for MainApp {
             });
 
             egui::Window::new("Weapons").show(ctx, |ui| {
-                ui.horizontal(|ui| {
-                    // do not set the 8th weapon, you may go into issue.
-                    if ui.button(" + ").clicked() && self.weapon_num < 7 {
-                        self.weapon_num += 1
-                    }
-                    if ui.button(" - ").clicked() && self.weapon_num > 0 {
-                        self.weapon_num -= 1;
-                        weapon[self.weapon_num] = Weapon::default();
-                    }
-                });
-
-                ui.separator();
-
-                for (chunk_i, chunk) in weapon[..self.weapon_num].chunks_mut(3).enumerate() {
-                    ui.horizontal(|ui| {
-                        for (i, weapon) in chunk.iter_mut().enumerate() {
-                            ui.vertical(|ui| {
-                                egui::ComboBox::new(
-                                    format!("weapontype-box-{}", chunk_i * 3 + i),
-                                    "",
-                                )
-                                .width(150.)
-                                .selected_text(weapon.classification.to_string())
-                                .show_ui(ui, |ui| {
-                                    for model in WeaponType::iter() {
-                                        ui.selectable_value(
-                                            &mut weapon.classification,
-                                            model,
-                                            model.to_string(),
-                                        );
-                                    }
-                                });
-                                if weapon.classification != WeaponType::None {
-                                    ui.horizontal(|ui| {
-                                        ui.label("level");
-                                        ui.add(Slider::new(&mut weapon.level, 0..=3));
-                                    });
-                                    ui.horizontal(|ui| {
-                                        ui.label("ammo");
-                                        ui.add(DragValue::new(&mut weapon.ammo));
-                                    });
-                                    ui.horizontal(|ui| {
-                                        ui.label("max ammo");
-                                        ui.add(DragValue::new(&mut weapon.max_ammo));
-                                    });
-                                    ui.horizontal(|ui| {
-                                        ui.label("exp");
-                                        ui.add(DragValue::new(&mut weapon.exp));
-                                    });
-                                }
-                            });
-                        }
-                    });
-                }
+                weapon::draw_window(ui, &mut self.weapon_num, weapon);
             });
         });
     }
@@ -338,3 +248,6 @@ impl eframe::App for MainApp {
         true
     }
 }
+
+mod basic;
+mod weapon;
