@@ -38,7 +38,7 @@ accesskit = ["eframe/accesskit"]
 incremental = true
 
 [profile.release]
-lto = true
+lto = "thin"
 panic = "abort"
 strip = true
 
