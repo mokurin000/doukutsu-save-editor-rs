@@ -34,10 +34,11 @@ pub fn draw_window(ui: &mut Ui, weapon_num: &mut usize, weapon: &mut [Weapon]) {
                 ui.vertical(|ui| {
                     let pos = chunk_i * chunk_size + i;
                     egui::ComboBox::new(format!("weapontype-box-{pos}"), "")
-                        .width(150.)
+                        .width(160.)
                         .selected_text(weapon.classification.to_string())
                         .show_ui(ui, |ui| {
                             let mut iter = WeaponType::iter();
+                            // skip None unless it's latest using slot
                             if pos + 1 < *weapon_num {
                                 iter.next();
                             }
@@ -51,20 +52,29 @@ pub fn draw_window(ui: &mut Ui, weapon_num: &mut usize, weapon: &mut [Weapon]) {
                         });
                     if weapon.classification != WeaponType::None {
                         ui.horizontal(|ui| {
-                            ui.label("level");
-                            ui.add(Slider::new(&mut weapon.level, 0..=3));
-                        });
-                        ui.horizontal(|ui| {
-                            ui.label("ammo");
-                            ui.add(DragValue::new(&mut weapon.ammo));
-                        });
-                        ui.horizontal(|ui| {
-                            ui.label("max ammo");
-                            ui.add(DragValue::new(&mut weapon.max_ammo));
-                        });
-                        ui.horizontal(|ui| {
-                            ui.label("exp");
-                            ui.add(DragValue::new(&mut weapon.exp));
+                            ui.vertical(|ui| {
+                                ui.label("level");
+                                ui.add(
+                                    Slider::new(&mut weapon.level, 0..=3)
+                                        .orientation(egui::SliderOrientation::Vertical),
+                                );
+                            });
+                            ui.vertical(|ui| {
+                                ui.horizontal(|ui| {
+                                    ui.label("ammo");
+                                    ui.add(DragValue::new(&mut weapon.ammo));
+                                });
+                                ui.add_space(10.);
+                                ui.horizontal(|ui| {
+                                    ui.label("max ammo");
+                                    ui.add(DragValue::new(&mut weapon.max_ammo));
+                                });
+                                ui.add_space(10.);
+                                ui.horizontal(|ui| {
+                                    ui.label("exp");
+                                    ui.add(DragValue::new(&mut weapon.exp));
+                                });
+                            });
                         });
                     }
                 });
