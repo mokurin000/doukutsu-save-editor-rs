@@ -1,5 +1,8 @@
 use cavestory_save::{items::Inventory, strum::IntoEnumIterator};
-use egui::Ui;
+use egui::{
+    text::{LayoutJob, TextWrapping},
+    TextFormat, Ui, Vec2,
+};
 
 const MAX_INVENTORY_NUM: usize = 31;
 
@@ -31,11 +34,23 @@ pub fn draw_window(ui: &mut Ui, inventory_num: &mut usize, inventory: &mut [Inve
     {
         ui.horizontal(|ui| {
             for (i, inventory) in chunk.iter_mut().enumerate() {
-                ui.vertical(|ui| {
-                    let pos = chunk_i * chunk_size + i;
+                let pos = chunk_i * chunk_size + i;
+                let truncated_warp = TextWrapping {
+                    max_rows: 1,
+                    break_anywhere: false,
+                    ..Default::default()
+                };
+                let mut layout_job = LayoutJob::default();
+                layout_job.append(&inventory.to_string(), 0., TextFormat::default());
+                layout_job.wrap = truncated_warp;
+                ui.scope(|ui| {
+                    ui.spacing_mut().icon_spacing = 0.;
+                    ui.spacing_mut().icon_width = 5.;
+                    ui.spacing_mut().item_spacing = Vec2::from([3., 3.]);
+                    ui.set_max_width(120.);
                     egui::ComboBox::new(format!("inventorytype-box-{pos}"), "")
-                        .width(150.)
-                        .selected_text(inventory.to_string())
+                        .selected_text(layout_job)
+                        .wrap(true)
                         .show_ui(ui, |ui| {
                             let mut iter = Inventory::iter();
                             if pos + 1 < *inventory_num {
