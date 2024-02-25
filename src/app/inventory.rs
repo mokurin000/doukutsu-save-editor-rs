@@ -33,7 +33,7 @@ pub fn draw_window(ui: &mut Ui, inventory_num: &mut usize, inventory: &mut [Inve
             for (i, inventory) in chunk.iter_mut().enumerate() {
                 ui.vertical(|ui| {
                     let pos = chunk_i * chunk_size + i;
-                    egui::ComboBox::new(format!("weapontype-box-{pos}"), "")
+                    egui::ComboBox::new(format!("inventorytype-box-{pos}"), "")
                         .width(150.)
                         .selected_text(inventory.to_string())
                         .show_ui(ui, |ui| {
