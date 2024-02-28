@@ -933,7 +933,7 @@ dependencies = [
 
 [[package]]
 name = "doukutsu-save-editor"
-version = "0.1.8"
+version = "0.1.9"
 dependencies = [
  "cavestory-save-lib",
  "eframe",
