@@ -1,3 +1,5 @@
+use std::ops::{AddAssign, SubAssign};
+
 use cavestory_save::{
     items::{Weapon, WeaponType},
     strum::IntoEnumIterator,
@@ -9,18 +11,19 @@ const MAX_WEAPON_NUM: usize = 7;
 pub fn draw_window(ui: &mut Ui, weapon_num: &mut usize, weapon: &mut [Weapon]) {
     ui.horizontal(|ui| {
         // do not set the 8th weapon, you may go into issue.
-        if (*weapon_num == 0
+        let could_add = (*weapon_num == 0
             || weapon
                 .get(*weapon_num - 1)
                 .is_some_and(|w| w.classification != WeaponType::None))
-            && *weapon_num < MAX_WEAPON_NUM
-            && ui.button(" + ").clicked()
-        {
-            *weapon_num += 1
+            && *weapon_num < MAX_WEAPON_NUM;
+
+        if ui.button(" + ").clicked() && could_add {
+            weapon_num.add_assign(1);
         }
 
-        if *weapon_num > 0 && ui.button(" - ").clicked() {
-            *weapon_num -= 1;
+        let could_sub = *weapon_num > 0;
+        if ui.button(" - ").clicked() && could_sub {
+            weapon_num.sub_assign(1);
             weapon[*weapon_num] = Weapon::default();
         }
     });

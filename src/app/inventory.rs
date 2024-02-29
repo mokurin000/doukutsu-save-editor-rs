@@ -1,3 +1,5 @@
+use std::ops::{AddAssign, SubAssign};
+
 use cavestory_save::{items::Inventory, strum::IntoEnumIterator};
 use egui::{
     text::{LayoutJob, TextWrapping},
@@ -8,19 +10,20 @@ const MAX_INVENTORY_NUM: usize = 31;
 
 pub fn draw_window(ui: &mut Ui, inventory_num: &mut usize, inventory: &mut [Inventory]) {
     ui.horizontal(|ui| {
-        // do not set the 8th weapon, you may go into issue.
-        if (*inventory_num == 0
+        let could_add = (*inventory_num == 0
             || inventory
                 .get(*inventory_num - 1)
                 .is_some_and(|&i| i != Inventory::None))
-            && *inventory_num < MAX_INVENTORY_NUM
-            && ui.button(" + ").clicked()
-        {
-            *inventory_num += 1
+            // do not set the 8th weapon, you may go into issues.
+            && *inventory_num < MAX_INVENTORY_NUM;
+        let could_sub = *inventory_num > 0;
+
+        if ui.button(" + ").clicked() && could_add {
+            inventory_num.add_assign(1);
         }
 
-        if *inventory_num > 0 && ui.button(" - ").clicked() {
-            *inventory_num -= 1;
+        if ui.button(" - ").clicked() && could_sub {
+            inventory_num.sub_assign(1);
             inventory[*inventory_num] = Default::default();
         }
     });
