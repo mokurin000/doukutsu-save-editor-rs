@@ -26,6 +26,13 @@ pub fn draw_window(ui: &mut Ui, inventory_num: &mut usize, inventory: &mut [Inve
             inventory_num.sub_assign(1);
             inventory[*inventory_num] = Default::default();
         }
+
+        if ui.button(" x ").clicked() {
+            *inventory_num = 0;
+            inventory[..]
+                .iter_mut()
+                .for_each(|i| *i = Default::default());
+        }
     });
 
     ui.separator();
