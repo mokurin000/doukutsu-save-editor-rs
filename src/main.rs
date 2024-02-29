@@ -1,6 +1,8 @@
 #![warn(clippy::all, rust_2018_idioms)]
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")] // hide console window on Windows in release
 
+use egui::Vec2;
+
 fn main() {
     use tokio::runtime::Runtime;
     use tokio::time;
@@ -8,7 +10,9 @@ fn main() {
     let native_options = eframe::NativeOptions {
         follow_system_theme: true,
         persist_window: true,
-        viewport: egui::ViewportBuilder::default().with_drag_and_drop(true),
+        viewport: egui::ViewportBuilder::default()
+            .with_drag_and_drop(true)
+            .with_min_inner_size(Vec2::new(840., 840.)),
         ..Default::default()
     };
 
