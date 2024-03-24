@@ -16,7 +16,7 @@ pub trait ProfileExt {
 
 impl ProfileExt for MainApp {
     fn verify_and_init(&mut self, data: Vec<u8>) -> Result<(), ProfileError> {
-        match Profile::try_from(data) {
+        match Profile::from_raw_without_length_check(data) {
             Ok(profile) => {
                 let game_profile = GameProfile::dump(&profile);
                 self.profile = Some((profile, game_profile));

@@ -695,9 +695,9 @@ dependencies = [
 
 [[package]]
 name = "cavestory-save-lib"
-version = "2.9.1"
+version = "2.9.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "27df95081807372352948160dc4251a7cde567f86ad6ce4d379aad3d2df346c0"
+checksum = "3f82cd2c6561982f317c650b58117d1ac6ba91150b8a34a71c2bee39002f9506"
 dependencies = [
  "strum",
  "thiserror",
@@ -971,7 +971,7 @@ dependencies = [
 
 [[package]]
 name = "doukutsu-save-editor"
-version = "0.1.10"
+version = "0.1.11"
 dependencies = [
  "cavestory-save-lib",
  "eframe",
