@@ -16,14 +16,14 @@ tap = "1.0.1"
 winit = "0.30"
 
 [target.'cfg(unix)'.dependencies]
-eframe = { version = "0.27.1", features = [
+eframe = { version = "0.27.2", features = [
     "glow",    # Use the glow rendering backend. Alternative: "wgpu".
     "x11",
     "wayland",
 ], default-features = false }
 
 [target.'cfg(not(unix))'.dependencies]
-eframe = { version = "0.27.1", features = [
+eframe = { version = "0.27.2", features = [
     "glow", # Use the glow rendering backend. Alternative: "wgpu".
 ], default-features = false }
 
