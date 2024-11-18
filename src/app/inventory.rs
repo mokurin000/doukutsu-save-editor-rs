@@ -60,7 +60,7 @@ pub fn draw_window(ui: &mut Ui, inventory_num: &mut usize, inventory: &mut [Inve
                     ui.set_max_width(120.);
                     egui::ComboBox::new(format!("inventorytype-box-{pos}"), "")
                         .selected_text(layout_job)
-                        .wrap(true)
+                        .wrap()
                         .show_ui(ui, |ui| {
                             let mut iter = Inventory::iter();
                             if pos + 1 < *inventory_num {

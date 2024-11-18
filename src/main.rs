@@ -8,11 +8,11 @@ fn main() {
     use tokio::time;
 
     let native_options = eframe::NativeOptions {
-        follow_system_theme: true,
         persist_window: true,
         viewport: egui::ViewportBuilder::default()
             .with_drag_and_drop(true)
             .with_min_inner_size(Vec2::new(840., 840.)),
+        hardware_acceleration: eframe::HardwareAcceleration::Preferred,
         ..Default::default()
     };
 
@@ -34,7 +34,7 @@ fn main() {
     eframe::run_native(
         app_name,
         native_options,
-        Box::new(|cc| Box::new(doukutsu_save_editor::MainApp::new(cc))),
+        Box::new(|cc| Ok(Box::new(doukutsu_save_editor::MainApp::new(cc)))),
     )
     .unwrap();
 }
