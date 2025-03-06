@@ -8,7 +8,10 @@ mod native;
 #[cfg(target_arch = "wasm32")]
 mod web;
 
+#[cfg(not(target_arch = "wasm32"))]
 pub use native::Storage;
+#[cfg(target_arch = "wasm32")]
+pub use web::Storage;
 
 pub trait StorageIO {
     fn drag_handle(&mut self, ctx: &egui::Context);

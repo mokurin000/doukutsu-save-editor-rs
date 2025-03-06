@@ -45,6 +45,7 @@ impl super::StorageIO for Storage {
             return None;
         };
 
+        self.path = None;
         Some(data)
     }
 

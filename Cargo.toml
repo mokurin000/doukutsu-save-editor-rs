@@ -21,6 +21,8 @@ tracing-subscriber = "0.3.19"
 wasm-bindgen-futures = "0.4.50"
 log = "0.4.26"
 web-sys = "0.3.77"
+# coroutine executor for js promise
+poll-promise = { version = "0.3.0", features = ["web"] }
 
 [target.'cfg(unix)'.dependencies]
 eframe = { version = "0.31.0", features = [

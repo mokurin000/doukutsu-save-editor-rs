@@ -25,16 +25,19 @@ impl ProfileExt for MainApp {
             }
             Err(e) => {
                 use rfd::{AsyncMessageDialog, MessageLevel};
+                let future = AsyncMessageDialog::new()
+                    .set_level(MessageLevel::Error)
+                    .set_title("Load Error")
+                    .set_description(&e.to_string())
+                    .show();
+                #[cfg(target_arch = "wasm32")]
+                {
+                    let _ = poll_promise::Promise::spawn_local(future);
+                }
 
                 #[cfg(not(target_arch = "wasm32"))]
-                tokio::task::spawn(async move {
-                    AsyncMessageDialog::new()
-                        .set_level(MessageLevel::Error)
-                        .set_title("Load Error")
-                        .set_description(&e.to_string())
-                        .show()
-                        .await;
-                });
+                tokio::task::spawn(future);
+
                 Err(e)
             }
         }
