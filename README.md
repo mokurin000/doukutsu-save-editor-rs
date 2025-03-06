@@ -11,7 +11,7 @@ Supports Windows, Linux/BSD and MacOS.
 ### Arch(-based)
 
 ```
-yay -S doukutsu-save-editor
+paru -S doukutsu-save-editor
 ```
 
 ### Other
