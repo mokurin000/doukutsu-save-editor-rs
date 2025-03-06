@@ -4,6 +4,7 @@ use cavestory_save::{GameProfile, Profile};
 
 use cavestory_save::items::*;
 use cavestory_save::strum::IntoEnumIterator;
+use egui::{Context, Ui};
 
 use std::sync::mpsc::{Receiver, Sender};
 
@@ -43,6 +44,98 @@ impl MainApp {
     }
 }
 
+impl MainApp {
+    fn show_save_button(&self, ui: &mut Ui) {
+        use rfd::{AsyncMessageDialog, MessageLevel};
+
+        if let Some(profile) = &self.profile {
+            if ui.button("Save").clicked() {
+                let mut modified_profile = profile.0.clone();
+                let Some(path) = &self.path else {
+                    return;
+                };
+
+                profile.1.write(&mut modified_profile);
+                let bytes: Vec<u8> = modified_profile.into();
+                let Err(e) = fs::write(path, bytes) else {
+                    return;
+                };
+
+                tokio::task::spawn(async move {
+                    AsyncMessageDialog::new()
+                        .set_level(MessageLevel::Error)
+                        .set_description(&e.to_string())
+                        .set_title("Error occured on saving!")
+                        .show()
+                        .await;
+                });
+            }
+        }
+    }
+
+    fn file_ops(&self, ui: &mut Ui, ctx: &Context) {
+        if ui.button("Open").clicked() {
+            (self.path_sender.clone(), ctx.clone())
+                .pipe(|(tx, ctx)| async move {
+                    use rfd::AsyncFileDialog;
+                    let path = AsyncFileDialog::default()
+                        .add_filter("Profile", &["dat"])
+                        .set_title("Pick your game profile")
+                        .pick_file()
+                        .await;
+                    if let Some(path) = path {
+                        let path = path.into();
+                        let _ = tx.send(path);
+                        ctx.request_repaint();
+                    }
+                })
+                .pipe(tokio::task::spawn);
+        }
+        if ui.button("Quit").clicked() {
+            ctx.send_viewport_cmd(egui::ViewportCommand::Close)
+        }
+    }
+
+    fn draw_editor(&mut self, ctx: &Context) {
+        let Some((
+            _,
+            GameProfile {
+                position,
+                map,
+                music,
+                health,
+                max_health,
+                weapon,
+                inventory,
+                teleporter: _,
+                equipment,
+            },
+        )) = &mut self.profile
+        else {
+            return;
+        };
+
+        egui::Window::new("Basic").show(ctx, |ui| {
+            basic::draw_window(ui, health, max_health, music, map, position);
+        });
+
+        egui::Window::new("Equipments").show(ctx, |ui| {
+            for (i, equip) in Equipment::iter().enumerate() {
+                ui.checkbox(&mut self.equip_checked[i], equip.to_string());
+                equipment.switch(equip, self.equip_checked[i]);
+            }
+        });
+
+        egui::Window::new("Weapons").show(ctx, |ui| {
+            weapon::draw_window(ui, &mut self.weapon_num, weapon);
+        });
+
+        egui::Window::new("Inventory").show(ctx, |ui| {
+            inventory::draw_window(ui, &mut self.inventory_num, inventory);
+        });
+    }
+}
+
 impl eframe::App for MainApp {
     /// Called by the frame work to save state before shutdown.
     fn save(&mut self, _storage: &mut dyn eframe::Storage) {}
@@ -72,26 +165,7 @@ impl eframe::App for MainApp {
         egui::TopBottomPanel::top("top_panel").show(ctx, |ui| {
             egui::menu::bar(ui, |ui| {
                 ui.menu_button("File", |ui| {
-                    if ui.button("Open").clicked() {
-                        (self.path_sender.clone(), ctx.clone())
-                            .pipe(|(tx, ctx)| async move {
-                                use rfd::AsyncFileDialog;
-                                let path = AsyncFileDialog::default()
-                                    .add_filter("Profile", &["dat"])
-                                    .set_title("Pick your game profile")
-                                    .pick_file()
-                                    .await;
-                                if let Some(path) = path {
-                                    let path = path.into();
-                                    let _ = tx.send(path);
-                                    ctx.request_repaint();
-                                }
-                            })
-                            .pipe(tokio::task::spawn);
-                    }
-                    if ui.button("Quit").clicked() {
-                        ctx.send_viewport_cmd(egui::ViewportCommand::Close)
-                    }
+                    self.file_ops(ui, &ctx);
                 });
             });
         });
@@ -105,83 +179,15 @@ impl eframe::App for MainApp {
                     }
                 }
 
-                if let Some(profile) = &self.profile {
-                    if ui.button("Save").clicked() {
-                        let mut modified_profile = profile.0.clone();
-                        if let Some(path) = &self.path {
-                            profile.1.write(&mut modified_profile);
-                            let bytes: Vec<u8> = modified_profile.into();
-                            if let Err(e) = fs::write(path, bytes) {
-                                use rfd::{AsyncMessageDialog, MessageLevel};
-                                tokio::task::spawn(async move {
-                                    AsyncMessageDialog::new()
-                                        .set_level(MessageLevel::Error)
-                                        .set_description(&e.to_string())
-                                        .set_title("Error occured on saving!")
-                                        .show()
-                                        .await;
-                                });
-                            }
-                        }
-                    }
-                }
+                self.show_save_button(ui);
             });
 
             if self.profile.is_none() {
                 ui.label("Please load profile.dat");
                 ui.label("You can drag it here");
+            } else {
+                self.draw_editor(ctx);
             }
-
-            ui.with_layout(egui::Layout::bottom_up(egui::Align::LEFT), |ui| {
-                ui.horizontal(|ui| {
-                    ui.spacing_mut().item_spacing.x = 0.0;
-                    ui.label("powered by ");
-                    ui.hyperlink_to("egui", "https://github.com/emilk/egui");
-                    ui.label(" and ");
-                    ui.hyperlink_to(
-                        "eframe",
-                        "https://github.com/emilk/egui/tree/master/crates/eframe",
-                    );
-                    ui.label(".");
-                });
-            });
-
-            let Some((
-                _,
-                GameProfile {
-                    position,
-                    map,
-                    music,
-                    health,
-                    max_health,
-                    weapon,
-                    inventory,
-                    teleporter: _,
-                    equipment,
-                },
-            )) = &mut self.profile
-            else {
-                return;
-            };
-
-            egui::Window::new("Basic").show(ctx, |ui| {
-                basic::draw_window(ui, health, max_health, music, map, position);
-            });
-
-            egui::Window::new("Equipments").show(ctx, |ui| {
-                for (i, equip) in Equipment::iter().enumerate() {
-                    ui.checkbox(&mut self.equip_checked[i], equip.to_string());
-                    equipment.switch(equip, self.equip_checked[i]);
-                }
-            });
-
-            egui::Window::new("Weapons").show(ctx, |ui| {
-                weapon::draw_window(ui, &mut self.weapon_num, weapon);
-            });
-
-            egui::Window::new("Inventory").show(ctx, |ui| {
-                inventory::draw_window(ui, &mut self.inventory_num, inventory);
-            });
         });
     }
 
