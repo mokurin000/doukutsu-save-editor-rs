@@ -1,21 +1,12 @@
 #![warn(clippy::all, rust_2018_idioms)]
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")] // hide console window on Windows in release
 
-use egui::Vec2;
-
-fn main() {
-    // Log to stdout (if you run with `RUST_LOG=debug`).
-    tracing_subscriber::fmt::init();
-
-    main_inner();
-}
-
 #[cfg(target_arch = "wasm32")]
-fn main_inner() {
+fn main() {
     use eframe::wasm_bindgen::JsCast as _;
 
     // Redirect `log` message to `console.log` and friends:
-    eframe::WebLogger::init(log::LevelFilter::Debug).ok();
+    eframe::WebLogger::init(log::LevelFilter::Debug).unwrap();
 
     let web_options = eframe::WebOptions::default();
 
@@ -35,7 +26,7 @@ fn main_inner() {
             .start(
                 canvas,
                 web_options,
-                Box::new(|cc| Ok(Box::new(eframe_template::TemplateApp::new(cc)))),
+                Box::new(|cc| Ok(Box::new(doukutsu_save_editor::MainApp::new(cc)))),
             )
             .await;
 
@@ -57,9 +48,13 @@ fn main_inner() {
 }
 
 #[cfg(not(target_arch = "wasm32"))]
-fn main_inner() {
+fn main() {
+    use egui::Vec2;
     use tokio::runtime::Runtime;
     use tokio::time;
+
+    // Log to stdout (if you run with `RUST_LOG=debug`).
+    tracing_subscriber::fmt::init();
 
     let native_options = eframe::NativeOptions {
         persist_window: true,

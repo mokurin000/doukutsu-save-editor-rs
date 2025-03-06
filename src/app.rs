@@ -1,41 +1,22 @@
-use std::{fs, path::PathBuf};
-
 use cavestory_save::{GameProfile, Profile};
 
 use cavestory_save::items::*;
 use cavestory_save::strum::IntoEnumIterator;
 use egui::{Context, Ui};
 
-use std::sync::mpsc::{Receiver, Sender};
-
-use tap::pipe::Pipe;
+use storage::StorageIO;
 
 use self::utils::ProfileExt;
 
+mod storage;
+
+#[derive(Default)]
 pub struct MainApp {
-    path: Option<PathBuf>,
-    path_sender: Sender<PathBuf>,
-    path_receiver: Receiver<PathBuf>,
+    storage: storage::Storage,
     profile: Option<(Profile, GameProfile)>,
     weapon_num: usize,
     inventory_num: usize,
     equip_checked: [bool; 9],
-}
-
-impl Default for MainApp {
-    fn default() -> Self {
-        let (path_sender, path_receiver) = std::sync::mpsc::channel();
-
-        MainApp {
-            path: None,
-            path_sender,
-            path_receiver,
-            profile: None,
-            weapon_num: 0,
-            inventory_num: 0,
-            equip_checked: [false; 9],
-        }
-    }
 }
 
 impl MainApp {
@@ -46,50 +27,19 @@ impl MainApp {
 
 impl MainApp {
     fn show_save_button(&self, ui: &mut Ui) {
-        use rfd::{AsyncMessageDialog, MessageLevel};
-
         if let Some(profile) = &self.profile {
             if ui.button("Save").clicked() {
                 let mut modified_profile = profile.0.clone();
-                let Some(path) = &self.path else {
-                    return;
-                };
-
                 profile.1.write(&mut modified_profile);
                 let bytes: Vec<u8> = modified_profile.into();
-                let Err(e) = fs::write(path, bytes) else {
-                    return;
-                };
-
-                tokio::task::spawn(async move {
-                    AsyncMessageDialog::new()
-                        .set_level(MessageLevel::Error)
-                        .set_description(&e.to_string())
-                        .set_title("Error occured on saving!")
-                        .show()
-                        .await;
-                });
+                self.storage.try_write_data(&bytes);
             }
         }
     }
 
     fn file_ops(&self, ui: &mut Ui, ctx: &Context) {
         if ui.button("Open").clicked() {
-            (self.path_sender.clone(), ctx.clone())
-                .pipe(|(tx, ctx)| async move {
-                    use rfd::AsyncFileDialog;
-                    let path = AsyncFileDialog::default()
-                        .add_filter("Profile", &["dat"])
-                        .set_title("Pick your game profile")
-                        .pick_file()
-                        .await;
-                    if let Some(path) = path {
-                        let path = path.into();
-                        let _ = tx.send(path);
-                        ctx.request_repaint();
-                    }
-                })
-                .pipe(tokio::task::spawn);
+            self.storage.open_dialog(ctx);
         }
         if ui.button("Quit").clicked() {
             ctx.send_viewport_cmd(egui::ViewportCommand::Close)
@@ -143,24 +93,11 @@ impl eframe::App for MainApp {
     /// Called each time the UI needs repainting, which may be many times per second.
     /// Put your widgets into a `SidePanel`, `TopPanel`, `CentralPanel`, `Window` or `Area`.
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
-        if let Ok(path) = self.path_receiver.try_recv() {
-            let data: Vec<u8> = fs::read(&path).unwrap();
-            if self.verify_and_init(data).is_ok() {
-                self.path = Some(path);
-            }
+        if let Some(data) = self.storage.try_read_data() {
+            let _ = self.verify_and_init(data);
         }
 
-        let dragged_path = ctx.input(|i| {
-            let dropped_files = &i.raw.hovered_files;
-
-            let file = dropped_files.get(0).map(|df| &df.path).cloned().flatten();
-            file
-        });
-
-        if let Some(path) = dragged_path {
-            let _ = self.path_sender.send(path);
-            ctx.input_mut(|i| i.raw.hovered_files.clear());
-        }
+        self.storage.drag_handle(ctx);
 
         egui::TopBottomPanel::top("top_panel").show(ctx, |ui| {
             egui::menu::bar(ui, |ui| {
@@ -178,7 +115,6 @@ impl eframe::App for MainApp {
                         self.update_state();
                     }
                 }
-
                 self.show_save_button(ui);
             });
 

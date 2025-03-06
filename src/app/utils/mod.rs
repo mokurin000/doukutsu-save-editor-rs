@@ -25,6 +25,8 @@ impl ProfileExt for MainApp {
             }
             Err(e) => {
                 use rfd::{AsyncMessageDialog, MessageLevel};
+
+                #[cfg(not(target_arch = "wasm32"))]
                 tokio::task::spawn(async move {
                     AsyncMessageDialog::new()
                         .set_level(MessageLevel::Error)
