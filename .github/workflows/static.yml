@@ -43,7 +43,7 @@ jobs:
       - name: Build website
         shell: bash
         run: |
-          ./trunk build -M -d pages --cargo-profile release --public-url https://mokurin000.github.io/doukutsu-save-editor-rs/
+          ./trunk build -M -d dist --cargo-profile release --public-url https://mokurin000.github.io/doukutsu-save-editor-rs/
       - name: Setup Pages
         uses: actions/configure-pages@v5
       - name: Upload artifact
