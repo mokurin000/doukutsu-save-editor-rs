@@ -41,11 +41,11 @@ impl super::StorageIO for Storage {
             self.path = Some(path);
         }
 
-        let Some(Ok(data)) = self.path.as_ref().map(|p| fs::read(p)) else {
+        let path = self.path.take()?;
+        let Ok(data) = fs::read(path) else {
             return None;
         };
 
-        self.path = None;
         Some(data)
     }
 

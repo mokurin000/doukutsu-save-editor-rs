@@ -120,7 +120,6 @@ impl eframe::App for MainApp {
 
             if self.profile.is_none() {
                 ui.label("Please load profile.dat");
-                #[cfg(not(target_arch = "wasm32"))]
                 ui.label("You can drag it here");
             } else {
                 self.draw_editor(ctx);

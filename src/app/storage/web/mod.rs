@@ -22,7 +22,19 @@ impl Default for Storage {
 }
 
 impl super::StorageIO for Storage {
-    fn drag_handle(&mut self, _ctx: &egui::Context) {}
+    fn drag_handle(&mut self, ctx: &egui::Context) {
+        let dragged_path: Option<_> = ctx.input(|i| {
+            let dropped_files = &i.raw.dropped_files;
+            let file = dropped_files.get(0)?;
+            let bytes = file.bytes.clone()?;
+            Some(bytes.to_vec())
+        });
+
+        if let Some(data) = dragged_path {
+            let _ = self.data_sender.send(data);
+            ctx.input_mut(|i| i.raw.dropped_files.clear());
+        }
+    }
 
     fn try_read_data(&mut self) -> Option<Vec<u8>> {
         while let Ok(data) = self.data_recv.try_recv() {
