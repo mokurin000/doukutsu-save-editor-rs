@@ -124,6 +124,19 @@ impl eframe::App for MainApp {
             } else {
                 self.draw_editor(ctx);
             }
+
+            #[cfg(target_arch = "wasm32")]
+            ui.with_layout(egui::Layout::bottom_up(egui::Align::LEFT), |ui| {
+                ui.horizontal(|ui| {
+                    ui.spacing_mut().item_spacing.x = 0.0;
+                    ui.label("To have a smoother experience, you can download ");
+                    ui.hyperlink_to(
+                        "native binaries",
+                        "https://github.com/mokurin000/doukutsu-save-editor-rs/releases/latest",
+                    );
+                    ui.label(" on github.");
+                });
+            });
         });
     }
 
