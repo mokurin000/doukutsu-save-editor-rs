@@ -50,7 +50,7 @@ impl super::StorageIO for Storage {
             if let Some(handle) = rfd::AsyncFileDialog::default()
                 .add_filter("Profile", &["dat"])
                 .set_title("Pick your game profile")
-                .pick_file()
+                .save_file()
                 .await
             {
                 let _ = handle.write(&data).await;
