@@ -31,6 +31,10 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+      - name: Setup rust toolchain
+        uses: dtolnay/rust-toolchain@nightly
+        with:
+          targets: wasm32-unknown-unknown
       - name: Install trunk
         shell: bash
         run: |
@@ -39,7 +43,7 @@ jobs:
       - name: Build website
         shell: bash
         run: |
-          trunk build -M -d pages --cargo-profile release --public-url https://mokurin000.github.io/doukutsu-save-editor-rs/
+          ./trunk build -M -d pages --cargo-profile release --public-url https://mokurin000.github.io/doukutsu-save-editor-rs/
       - name: Setup Pages
         uses: actions/configure-pages@v5
       - name: Upload artifact
