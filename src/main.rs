@@ -50,8 +50,6 @@ fn main() {
 #[cfg(not(target_arch = "wasm32"))]
 fn main() {
     use egui::Vec2;
-    use tokio::runtime::Runtime;
-    use tokio::time;
 
     // Log to stdout (if you run with `RUST_LOG=debug`).
     tracing_subscriber::fmt::init();
@@ -65,13 +63,14 @@ fn main() {
         ..Default::default()
     };
 
-    let async_rt = Runtime::new().unwrap();
-    let _guard = async_rt.enter();
-
     std::thread::spawn(move || {
+        let async_rt = tokio::runtime::LocalRuntime::new().unwrap();
+        let handle = async_rt.handle();
+        let _ = doukutsu_save_editor::TOKIO_HANDLE.set(handle.clone());
+
         async_rt.block_on(async move {
             loop {
-                time::sleep(time::Duration::from_secs(114514)).await;
+                tokio::time::sleep(tokio::time::Duration::from_secs(114514)).await;
             }
         });
     });

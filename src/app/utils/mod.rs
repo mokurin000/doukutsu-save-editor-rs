@@ -31,12 +31,10 @@ impl ProfileExt for MainApp {
                     .set_description(&e.to_string())
                     .show();
                 #[cfg(target_arch = "wasm32")]
-                {
-                    let _ = poll_promise::Promise::spawn_local(future);
-                }
+                let _ = poll_promise::Promise::spawn_local(future);
 
                 #[cfg(not(target_arch = "wasm32"))]
-                tokio::task::spawn(future);
+                crate::TOKIO_HANDLE.get().unwrap().spawn(future);
 
                 Err(e)
             }

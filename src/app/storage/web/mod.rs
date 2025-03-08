@@ -49,7 +49,7 @@ impl super::StorageIO for Storage {
         let future = async move {
             if let Some(handle) = rfd::AsyncFileDialog::default()
                 .add_filter("Profile", &["dat"])
-                .set_title("Pick your game profile")
+                .set_title("Save your game profile")
                 .set_file_name("profile.dat")
                 .save_file()
                 .await

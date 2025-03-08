@@ -1,6 +1,6 @@
 use std::{fs, path::PathBuf, sync::mpsc};
 
-use rfd::{AsyncFileDialog, AsyncMessageDialog, MessageLevel};
+use rfd::AsyncFileDialog;
 use tap::pipe::Pipe;
 
 pub struct Storage {
@@ -50,19 +50,20 @@ impl super::StorageIO for Storage {
     }
 
     fn try_write_data(&self, data: &[u8]) {
-        let Some(path) = &self.path else {
-            return;
+        let data = data.to_vec();
+        let future = async move {
+            if let Some(handle) = rfd::AsyncFileDialog::default()
+                .add_filter("Profile", &["dat"])
+                .set_title("Save your game profile")
+                .set_file_name("profile.dat")
+                .save_file()
+                .await
+            {
+                let _ = handle.write(&data).await;
+            }
         };
-        if let Err(e) = fs::write(path, data) {
-            tokio::task::spawn(async move {
-                AsyncMessageDialog::new()
-                    .set_level(MessageLevel::Error)
-                    .set_description(&e.to_string())
-                    .set_title("Error occured on saving!")
-                    .show()
-                    .await;
-            });
-        }
+
+        crate::TOKIO_HANDLE.get().unwrap().spawn(future);
     }
 
     fn open_dialog(&self, ctx: &egui::Context) {
@@ -79,6 +80,6 @@ impl super::StorageIO for Storage {
                     ctx.request_repaint();
                 }
             })
-            .pipe(tokio::task::spawn);
+            .pipe(|future| crate::TOKIO_HANDLE.get().unwrap().spawn(future));
     }
 }
