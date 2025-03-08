@@ -44,7 +44,8 @@ jobs:
       - uses: Swatinem/rust-cache@v2
 
       - name: Build executable
-        run: cargo build --release --target ${{ matrix.target }}
+        shell: bash
+        run: RUSTFLAGS="--cfg tokio_unstable" cargo build --release --target ${{ matrix.target }}
 
       - name: Prepare assets
         shell: bash
