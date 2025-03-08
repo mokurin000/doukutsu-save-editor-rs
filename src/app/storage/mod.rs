@@ -3,15 +3,8 @@
 // This software is released under the MIT License.
 // https://opensource.org/licenses/MIT
 
-#[cfg(not(target_arch = "wasm32"))]
-mod native;
-#[cfg(target_arch = "wasm32")]
-mod web;
-
-#[cfg(not(target_arch = "wasm32"))]
-pub use native::Storage;
-#[cfg(target_arch = "wasm32")]
-pub use web::Storage;
+mod inner;
+pub use inner::Storage;
 
 pub trait StorageIO {
     fn drag_handle(&mut self, ctx: &egui::Context);

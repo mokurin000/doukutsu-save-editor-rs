@@ -23,11 +23,24 @@ impl Default for Storage {
 
 impl super::StorageIO for Storage {
     fn drag_handle(&mut self, ctx: &egui::Context) {
+        #[cfg(target_arch = "wasm32")]
         let dragged_path: Option<_> = ctx.input(|i| {
             let dropped_files = &i.raw.dropped_files;
             let file = dropped_files.get(0)?;
             let bytes = file.bytes.clone()?;
             Some(bytes.to_vec())
+        });
+
+        // workarounds: dnd does not work on windows, even with 'drag-and-drog' enabled.
+        #[cfg(not(target_arch = "wasm32"))]
+        let dragged_path: Option<_> = ctx.input(|i| {
+            let dropped_files = &i.raw.hovered_files;
+            let file = dropped_files.get(0)?;
+
+            file.path
+                .iter()
+                .filter_map(|path| std::fs::read(path).ok())
+                .next()
         });
 
         if let Some(data) = dragged_path {
@@ -58,7 +71,10 @@ impl super::StorageIO for Storage {
             }
         };
 
+        #[cfg(target_arch = "wasm32")]
         let _ = poll_promise::Promise::spawn_local(future);
+        #[cfg(not(target_arch = "wasm32"))]
+        let _ = crate::TOKIO_HANDLE.get().unwrap().spawn(future);
     }
 
     fn open_dialog(&self, _ctx: &egui::Context) {
@@ -75,6 +91,9 @@ impl super::StorageIO for Storage {
             }
         };
 
+        #[cfg(target_arch = "wasm32")]
         let _ = poll_promise::Promise::spawn_local(future);
+        #[cfg(not(target_arch = "wasm32"))]
+        let _ = crate::TOKIO_HANDLE.get().unwrap().spawn(future);
     }
 }

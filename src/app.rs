@@ -37,10 +37,14 @@ impl MainApp {
         }
     }
 
-    fn file_ops(&self, ui: &mut Ui, ctx: &Context) {
+    fn file_ops(&mut self, ui: &mut Ui, ctx: &Context) {
         if ui.button("Open").clicked() {
             self.storage.open_dialog(ctx);
         }
+        if ui.button("Clear").clicked() {
+            self.profile.take();
+        }
+        #[cfg(not(target_arch = "wasm32"))]
         if ui.button("Quit").clicked() {
             ctx.send_viewport_cmd(egui::ViewportCommand::Close)
         }
