@@ -1,5 +1,7 @@
 use cavestory_save::{
-    items::{EquipOpt, Equipment, Inventory, WeaponType},
+    items::{
+        EquipOpt, Equipment, Inventory, Teleporter, TeleporterLocation, TeleporterMenu, WeaponType,
+    },
     strum::IntoEnumIterator,
     GameProfile, Profile, ProfileError,
 };
@@ -12,6 +14,7 @@ pub trait ProfileExt {
     fn detect_equip(&self) -> Option<[bool; 9]>;
     fn count_weapon(&self) -> Option<usize>;
     fn count_inventory(&self) -> Option<usize>;
+    fn enable_all_teleporters(gp: &mut GameProfile);
 }
 
 impl ProfileExt for MainApp {
@@ -83,5 +86,33 @@ impl ProfileExt for MainApp {
                     .take_while(|&&i| i != Inventory::None)
                     .count()
             })
+    }
+
+    fn enable_all_teleporters(gameprofile: &mut GameProfile) {
+        let teleporters = [
+            Teleporter {
+                menu: TeleporterMenu::EggCorridor,
+                location: TeleporterLocation::EggCorridor,
+            },
+            Teleporter {
+                menu: TeleporterMenu::Grasstown,
+                location: TeleporterLocation::Grasstown,
+            },
+            Teleporter {
+                menu: TeleporterMenu::SandZone,
+                location: TeleporterLocation::SandZone,
+            },
+            Teleporter {
+                menu: TeleporterMenu::Plantation,
+                location: TeleporterLocation::Plantation,
+            },
+            Teleporter {
+                menu: TeleporterMenu::Labyrinth,
+                location: TeleporterLocation::Labyrinth,
+            },
+        ];
+        for (i, teleporter) in teleporters.into_iter().enumerate() {
+            gameprofile.teleporter[i] = teleporter;
+        }
     }
 }

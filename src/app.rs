@@ -41,9 +41,15 @@ impl MainApp {
         if ui.button("Open").clicked() {
             self.storage.open_dialog(ctx);
         }
-        if ui.button("Clear").clicked() {
-            self.profile.take();
+        if let Some((_, gameprofile)) = &mut self.profile {
+            if ui.button("Enable all teleporters").clicked() {
+                MainApp::enable_all_teleporters(gameprofile);
+            }
+            if ui.button("Clear").clicked() {
+                self.profile.take();
+            }
         }
+
         #[cfg(not(target_arch = "wasm32"))]
         if ui.button("Quit").clicked() {
             ctx.send_viewport_cmd(egui::ViewportCommand::Close)
