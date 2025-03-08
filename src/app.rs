@@ -112,6 +112,7 @@ impl eframe::App for MainApp {
         egui::TopBottomPanel::top("top_panel").show(ctx, |ui| {
             egui::menu::bar(ui, |ui| {
                 ui.menu_button("File", |ui| {
+                    ui.set_width(80.0);
                     self.file_ops(ui, &ctx);
                 });
             });
