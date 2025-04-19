@@ -1,2 +1,5 @@
 [build]
 filehash = false
+
+[tools]
+wasm_opt = "version_123"
