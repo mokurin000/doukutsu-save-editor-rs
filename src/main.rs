@@ -46,10 +46,23 @@ fn main() {
         }
     });
 }
+#[cfg(not(target_arch = "wasm32"))]
+#[compio::main]
+async fn init_async_runtime() {
+    use doukutsu_save_editor::TASK_SENDER;
+
+    let (tx, rx) = kanal::unbounded();
+    let rx = rx.to_async();
+
+    _ = TASK_SENDER.set(tx);
+
+    while let Ok(fut) = rx.recv().await {
+        fut.await;
+    }
+}
 
 #[cfg(not(target_arch = "wasm32"))]
 fn main() {
-    use doukutsu_save_editor::TASK_SENDER;
     use egui::Vec2;
     use spdlog::Level;
 
@@ -65,19 +78,7 @@ fn main() {
         ..Default::default()
     };
 
-    std::thread::spawn(move || {
-        let (tx, rx) = kanal::unbounded();
-        let rx = rx.to_async();
-
-        _ = TASK_SENDER.set(tx);
-
-        let async_rt = compio::runtime::Runtime::new().unwrap();
-        async_rt.block_on(async move {
-            while let Ok(fut) = rx.recv().await {
-                fut.await;
-            }
-        });
-    });
+    std::thread::spawn(init_async_runtime);
 
     let app_name = "CaveStory Save Editor";
     eframe::run_native(
