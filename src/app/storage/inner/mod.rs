@@ -3,7 +3,7 @@
 // This software is released under the MIT License.
 // https://opensource.org/licenses/MIT
 
-use std::sync::mpsc::{self, Receiver, Sender};
+use kanal::{unbounded, Receiver, Sender};
 
 pub struct Storage {
     data: Option<Vec<u8>>,
@@ -12,7 +12,7 @@ pub struct Storage {
 }
 impl Default for Storage {
     fn default() -> Self {
-        let (sender, recv) = mpsc::channel();
+        let (sender, recv) = unbounded();
         Self {
             data: Default::default(),
             data_sender: sender,
@@ -50,7 +50,7 @@ impl super::StorageIO for Storage {
     }
 
     fn try_read_data(&mut self) -> Option<Vec<u8>> {
-        while let Ok(data) = self.data_recv.try_recv() {
+        while let Ok(Some(data)) = self.data_recv.try_recv() {
             self.data = Some(data);
         }
 
@@ -74,7 +74,7 @@ impl super::StorageIO for Storage {
         #[cfg(target_arch = "wasm32")]
         let _ = poll_promise::Promise::spawn_local(future);
         #[cfg(not(target_arch = "wasm32"))]
-        let _ = crate::TOKIO_HANDLE.get().unwrap().spawn(future);
+        let _ = crate::TASK_SENDER.get().unwrap().send(Box::pin(future));
     }
 
     fn open_dialog(&self, _ctx: &egui::Context) {
@@ -87,13 +87,13 @@ impl super::StorageIO for Storage {
                 .await
             {
                 let data = handle.read().await;
-                let _ = sender.send(data);
+                let _ = sender.as_async().send(data).await;
             }
         };
 
         #[cfg(target_arch = "wasm32")]
         let _ = poll_promise::Promise::spawn_local(future);
         #[cfg(not(target_arch = "wasm32"))]
-        let _ = crate::TOKIO_HANDLE.get().unwrap().spawn(future);
+        let _ = crate::TASK_SENDER.get().unwrap().send(Box::pin(future));
     }
 }

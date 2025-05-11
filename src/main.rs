@@ -49,10 +49,12 @@ fn main() {
 
 #[cfg(not(target_arch = "wasm32"))]
 fn main() {
+    use doukutsu_save_editor::TASK_SENDER;
     use egui::Vec2;
+    use spdlog::Level;
 
     // Log to stdout (if you run with `RUST_LOG=debug`).
-    tracing_subscriber::fmt::init();
+    spdlog::default_logger().set_level_filter(spdlog::LevelFilter::MoreSevereEqual(Level::Debug));
 
     let native_options = eframe::NativeOptions {
         persist_window: true,
@@ -64,13 +66,15 @@ fn main() {
     };
 
     std::thread::spawn(move || {
-        let async_rt = tokio::runtime::LocalRuntime::new().unwrap();
-        let handle = async_rt.handle();
-        let _ = doukutsu_save_editor::TOKIO_HANDLE.set(handle.clone());
+        let (tx, rx) = kanal::unbounded();
+        let rx = rx.to_async();
 
+        _ = TASK_SENDER.set(tx);
+
+        let async_rt = compio::runtime::Runtime::new().unwrap();
         async_rt.block_on(async move {
-            loop {
-                tokio::time::sleep(tokio::time::Duration::from_secs(114514)).await;
+            while let Ok(fut) = rx.recv().await {
+                fut.await;
             }
         });
     });
