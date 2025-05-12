@@ -18,6 +18,7 @@ kanal = "0.1.1"
 compio = { version = "0.14", default-features = false, features = [
     "macros",
     "runtime",
+    "io-uring",
 ] }
 spdlog-rs = "0.4.3"
 
