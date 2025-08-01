@@ -9,7 +9,7 @@ license = "MIT"
 [dependencies]
 egui = { version = "0.31.1" }
 cavestory-save-lib = "2.9.2"
-rfd = "0.15.3"
+rfd = "0.15.4"
 tap = "1.0.1"
 winit = "0.30.11"
 kanal = "0.1.1"
