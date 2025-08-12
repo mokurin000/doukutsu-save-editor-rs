@@ -7,7 +7,7 @@ rust-version = "1.65"
 license = "MIT"
 
 [dependencies]
-egui = { version = "0.31.1" }
+egui = { version = "0.32.0" }
 cavestory-save-lib = "2.9.2"
 rfd = "0.15.3"
 tap = "1.0.1"
