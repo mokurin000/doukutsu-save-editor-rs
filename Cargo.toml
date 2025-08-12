@@ -31,14 +31,14 @@ log = "0.4.27"
 poll-promise = { version = "0.3.0", features = ["web"] }
 
 [target.'cfg(unix)'.dependencies]
-eframe = { version = "0.31.1", features = [
+eframe = { version = "0.32.0", features = [
     "glow",    # Use the glow rendering backend. Alternative: "wgpu".
     "x11",
     "wayland",
 ], default-features = false }
 
 [target.'cfg(not(unix))'.dependencies]
-eframe = { version = "0.31.1", features = [
+eframe = { version = "0.32.0", features = [
     "glow", # Use the glow rendering backend. Alternative: "wgpu".
 ], default-features = false }
 
