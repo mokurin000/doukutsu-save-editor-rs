@@ -26,7 +26,7 @@ spdlog-rs = "0.4.3"
 wasm-bindgen = "0.2.100"
 wasm-bindgen-futures = "0.4"
 web-sys = "0.3"
-log = "0.4.27"
+log = "0.4.28"
 # coroutine executor for js promise
 poll-promise = { version = "0.3.0", features = ["web"] }
 
