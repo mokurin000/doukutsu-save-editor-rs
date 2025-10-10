@@ -15,7 +15,7 @@ winit = "0.30.12"
 kanal = "0.1.1"
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
-compio = { version = "0.15", default-features = false, features = [
+compio = { version = "0.16", default-features = false, features = [
     "macros",
     "runtime",
     "io-uring",
