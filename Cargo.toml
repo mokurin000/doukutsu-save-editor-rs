@@ -7,7 +7,7 @@ rust-version = "1.65"
 license = "MIT"
 
 [dependencies]
-egui = { version = "0.32.3" }
+egui = { version = "0.33.0" }
 cavestory-save-lib = "2.9.2"
 rfd = "0.15.4"
 tap = "1.0.1"
@@ -15,12 +15,12 @@ winit = "0.30.12"
 kanal = "0.1.1"
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
-compio = { version = "0.15", default-features = false, features = [
+compio = { version = "0.16.0", default-features = false, features = [
     "macros",
     "runtime",
     "io-uring",
 ] }
-spdlog-rs = "0.4.3"
+spdlog-rs = "0.5.1"
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 wasm-bindgen = "0.2.100"
@@ -31,14 +31,14 @@ log = "0.4.28"
 poll-promise = { version = "0.3.0", features = ["web"] }
 
 [target.'cfg(unix)'.dependencies]
-eframe = { version = "0.32.0", features = [
+eframe = { version = "0.33.0", features = [
     "glow",    # Use the glow rendering backend. Alternative: "wgpu".
     "x11",
     "wayland",
 ], default-features = false }
 
 [target.'cfg(not(unix))'.dependencies]
-eframe = { version = "0.32.0", features = [
+eframe = { version = "0.33.0", features = [
     "glow", # Use the glow rendering backend. Alternative: "wgpu".
 ], default-features = false }
 
