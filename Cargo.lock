@@ -384,9 +384,12 @@ dependencies = [
 
 [[package]]
 name = "atomic"
-version = "0.5.3"
+version = "0.6.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c59bdb34bc650a32731b31bd8f0829cc15d24a708ee31559e0bb34f2bc320cba"
+checksum = "a89cbf775b137e9b968e67227ef7f775587cde3fd31b0d8599dbd0f598a48340"
+dependencies = [
+ "bytemuck",
+]
 
 [[package]]
 name = "atomic-waker"
@@ -2997,12 +3000,13 @@ dependencies = [
 
 [[package]]
 name = "spdlog-rs"
-version = "0.5.1"
+version = "0.5.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ed4380e4305ed967e1e665e60add1647223cfdc38f6410c7023323dc50341a30"
+checksum = "2c3a3480e91f3f57be460a227415f08975bc39f667c5eff18a76b2dfbeb2f09b"
 dependencies = [
  "arc-swap",
  "atomic",
+ "bytemuck",
  "chrono",
  "dyn-clone",
  "is-terminal",
