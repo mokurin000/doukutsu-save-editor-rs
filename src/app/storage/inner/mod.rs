@@ -77,7 +77,7 @@ impl super::StorageIO for Storage {
         let _ = crate::TASK_SENDER.get().unwrap().send(Box::pin(future));
     }
 
-    fn open_dialog(&self, _ctx: &egui::Context) {
+    fn open_dialog(&self) {
         let sender = self.data_sender.clone();
         let future = async move {
             if let Some(handle) = rfd::AsyncFileDialog::default()

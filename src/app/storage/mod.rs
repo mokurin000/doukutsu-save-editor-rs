@@ -10,5 +10,5 @@ pub trait StorageIO {
     fn drag_handle(&mut self, ctx: &egui::Context);
     fn try_read_data(&mut self) -> Option<Vec<u8>>;
     fn try_write_data(&self, data: &[u8]);
-    fn open_dialog(&self, ctx: &egui::Context);
+    fn open_dialog(&self);
 }

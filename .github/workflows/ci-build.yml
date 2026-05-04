@@ -15,7 +15,6 @@ jobs:
       matrix:
         platform: [linux_glibc-x86_64, windows-x86_64]
         include:
-        
           - platform: linux_glibc-x86_64
             target: x86_64-unknown-linux-gnu
             os: ubuntu-latest

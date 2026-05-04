@@ -2,7 +2,7 @@ use cavestory_save::{GameProfile, Profile};
 
 use cavestory_save::items::*;
 use cavestory_save::strum::IntoEnumIterator;
-use egui::{Context, Ui};
+use egui::{Context, Panel, Ui};
 
 use storage::StorageIO;
 
@@ -37,9 +37,9 @@ impl MainApp {
         }
     }
 
-    fn file_ops(&mut self, ui: &mut Ui, ctx: &Context) {
+    fn file_ops(&mut self, ui: &mut Ui) {
         if ui.button("Open").clicked() {
-            self.storage.open_dialog(ctx);
+            self.storage.open_dialog();
         }
         if let Some((_, gameprofile)) = &mut self.profile {
             if ui.button("Enable all teleporters").clicked() {
@@ -52,7 +52,7 @@ impl MainApp {
 
         #[cfg(not(target_arch = "wasm32"))]
         if ui.button("Quit").clicked() {
-            ctx.send_viewport_cmd(egui::ViewportCommand::Close)
+            ui.ctx().send_viewport_cmd(egui::ViewportCommand::Close)
         }
     }
 
@@ -97,28 +97,23 @@ impl MainApp {
 }
 
 impl eframe::App for MainApp {
-    /// Called by the frame work to save state before shutdown.
-    fn save(&mut self, _storage: &mut dyn eframe::Storage) {}
-
-    /// Called each time the UI needs repainting, which may be many times per second.
-    /// Put your widgets into a `SidePanel`, `TopPanel`, `CentralPanel`, `Window` or `Area`.
-    fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+    fn ui(&mut self, ui: &mut egui::Ui, _frame: &mut eframe::Frame) {
         if let Some(data) = self.storage.try_read_data() {
             let _ = self.verify_and_init(data);
         }
 
-        self.storage.drag_handle(ctx);
+        self.storage.drag_handle(ui.ctx());
 
-        egui::TopBottomPanel::top("top_panel").show(ctx, |ui| {
+        Panel::top("top_panel").show_inside(ui, |ui| {
             egui::MenuBar::new().ui(ui, |ui| {
                 ui.menu_button("File", |ui| {
                     ui.set_width(80.0);
-                    self.file_ops(ui, &ctx);
+                    self.file_ops(ui);
                 });
             });
         });
 
-        egui::CentralPanel::default().show(ctx, |ui| {
+        egui::CentralPanel::default().show_inside(ui, |ui| {
             ui.horizontal(|ui| {
                 if let Some(profile) = &mut self.profile {
                     if ui.button("Undo all").clicked() {
@@ -133,7 +128,7 @@ impl eframe::App for MainApp {
                 ui.label("Please load profile.dat");
                 ui.label("You can drag it here");
             } else {
-                self.draw_editor(ctx);
+                self.draw_editor(ui.ctx());
             }
 
             #[cfg(target_arch = "wasm32")]
@@ -149,25 +144,6 @@ impl eframe::App for MainApp {
                 });
             });
         });
-    }
-
-    fn on_exit(&mut self, _gl: Option<&eframe::glow::Context>) {}
-
-    fn auto_save_interval(&self) -> std::time::Duration {
-        std::time::Duration::from_secs(30)
-    }
-
-    fn clear_color(&self, _visuals: &egui::Visuals) -> [f32; 4] {
-        // NOTE: a bright gray makes the shadows of the windows look weird.
-        // We use a bit of transparency so that if the user switches on the
-        // `transparent()` option they get immediate results.
-        [12., 12., 12., 180.]
-
-        // _visuals.window_fill() would also be a natural choice
-    }
-
-    fn persist_egui_memory(&self) -> bool {
-        true
     }
 }
 
