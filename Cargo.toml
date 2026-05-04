@@ -14,6 +14,13 @@ tap = "1.0.1"
 winit = "0.30.12"
 kanal = "0.1.1"
 
+eframe = { version = "0.34.1", features = [
+    "glow",
+    "x11",
+    "wayland",
+], default-features = false }
+
+
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 compio = { version = "0.18.0", default-features = false, features = [
     "macros",
@@ -21,13 +28,6 @@ compio = { version = "0.18.0", default-features = false, features = [
     "io-uring",
 ] }
 spdlog-rs = "0.5.3"
-
-eframe = { version = "0.34.1", features = [
-    "glow",
-    "x11",
-    "wayland",
-], default-features = false }
-
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 wasm-bindgen = "0.2.100"
