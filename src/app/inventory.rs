@@ -47,7 +47,7 @@ pub fn draw_window(ui: &mut Ui, inventory_num: &mut usize, inventory: &mut [Inve
                 let pos = chunk_i * chunk_size + i;
                 let truncated_warp = TextWrapping {
                     max_rows: 1,
-                    break_anywhere: false,
+                    break_anywhere: true,
                     ..Default::default()
                 };
                 let mut layout_job = LayoutJob::default();
@@ -56,11 +56,13 @@ pub fn draw_window(ui: &mut Ui, inventory_num: &mut usize, inventory: &mut [Inve
                 ui.scope(|ui| {
                     ui.spacing_mut().icon_spacing = 0.;
                     ui.spacing_mut().icon_width = 5.;
+                    ui.spacing_mut().combo_width = 115.;
                     ui.spacing_mut().item_spacing = Vec2::from([3., 3.]);
+                    ui.set_min_width(120.);
                     ui.set_max_width(120.);
                     egui::ComboBox::new(format!("inventorytype-box-{pos}"), "")
                         .selected_text(layout_job)
-                        .wrap()
+                        .truncate()
                         .show_ui(ui, |ui| {
                             let mut iter = Inventory::iter();
                             if pos + 1 < *inventory_num {
