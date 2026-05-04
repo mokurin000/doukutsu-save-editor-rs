@@ -34,7 +34,7 @@ impl super::StorageIO for Storage {
         // workarounds: dnd does not work on windows, even with 'drag-and-drog' enabled.
         #[cfg(not(target_arch = "wasm32"))]
         let dragged_path: Option<_> = ctx.input(|i| {
-            let dropped_files = &i.raw.hovered_files;
+            let dropped_files = &i.raw.dropped_files;
             let file = dropped_files.get(0)?;
 
             file.path
