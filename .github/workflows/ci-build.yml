@@ -30,7 +30,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - uses: dtolnay/rust-toolchain@stable
         with:
@@ -74,7 +74,7 @@ jobs:
           echo "suffix=${suffix}" >> $GITHUB_OUTPUT
 
       - name: Pre-Release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
           files: ${{ matrix.target }}${{ steps.vars.outputs.suffix }}.tar.gz
           tag_name: v${{ steps.vars.outputs.editor_ver }}
