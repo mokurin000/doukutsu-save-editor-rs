@@ -1,7 +1,7 @@
 [package]
 name = "doukutsu-save-editor"
 version = "0.1.17"
-authors = ["poly000 <1348292515@qq.com>"]
+authors = ["mokurin000 <mokurin000@gmail.com>"]
 edition = "2021"
 rust-version = "1.65"
 license = "MIT"

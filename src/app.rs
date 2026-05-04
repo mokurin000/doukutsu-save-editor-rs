@@ -135,13 +135,22 @@ impl eframe::App for MainApp {
             ui.with_layout(egui::Layout::bottom_up(egui::Align::LEFT), |ui| {
                 ui.horizontal(|ui| {
                     ui.spacing_mut().item_spacing.x = 0.0;
-                    ui.label("To have a smoother experience, you can download ");
+                    ui.label("To have a smoother experience and a11y support, you can download ");
                     ui.hyperlink_to(
                         "native binaries",
                         "https://github.com/mokurin000/doukutsu-save-editor-rs/releases/latest",
                     );
                     ui.label(" on github.");
                 });
+            });
+
+            Panel::bottom("bottom-about").show_inside(ui, |ui| {
+                ui.label(format!(
+                    "{} {} by {}",
+                    env!("CARGO_PKG_NAME"),
+                    env!("CARGO_PKG_VERSION"),
+                    env!("CARGO_PKG_AUTHORS")
+                ))
             });
         });
     }
