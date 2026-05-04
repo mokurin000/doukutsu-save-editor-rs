@@ -31,7 +31,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - uses: dtolnay/rust-toolchain@stable
         with:
@@ -43,8 +43,6 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install libxcb-render0-dev libxcb-shape0-dev libxcb-xfixes0-dev libspeechd-dev libxkbcommon-dev libssl-dev libgtk-3-dev libatk-bridge2.0-dev
-
-      - uses: Swatinem/rust-cache@v2
 
       - name: Build executable
         shell: bash
@@ -77,7 +75,7 @@ jobs:
           echo "editor_ver=${editor_ver}" >> $GITHUB_OUTPUT
 
       - name: Pre-Release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           files: ${{ steps.assets.outputs.file }}
           tag_name: v${{ steps.vars.outputs.editor_ver }}
