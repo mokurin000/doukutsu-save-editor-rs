@@ -14,7 +14,7 @@ tap = "1.0.1"
 winit = "0.30.12"
 kanal = "0.1.1"
 
-eframe = { version = "0.34.1", features = [
+eframe = { version = "0.34.3", features = [
     "glow",
     "x11",
     "wayland",
